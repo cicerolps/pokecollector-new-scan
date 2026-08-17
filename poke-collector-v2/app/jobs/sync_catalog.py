@@ -33,14 +33,13 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-import imagehash
-from PIL import Image
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.db.models import Card, CardHash
 from app.db.session import SessionLocal, init_db
 from app.integrations.tcgdex_client import TcgdexClient
+from app.pipeline import hash_matcher, preprocess
 
 logger = logging.getLogger("sync_catalog")
 
@@ -83,14 +82,22 @@ async def _download_image(http_client: httpx.AsyncClient, url: str, dest: Path) 
     dest.write_bytes(response.content)
 
 
-def _compute_hashes(image_path: Path) -> dict[str, str]:
-    with Image.open(image_path) as img:
-        img = img.convert("RGB")
-        return {
-            "phash": str(imagehash.phash(img)),
-            "dhash": str(imagehash.dhash(img)),
-            "whash": str(imagehash.whash(img)),
-        }
+def _compute_hashes(image_path: Path, output_size: tuple[int, int]) -> dict[str, str]:
+    """Hash a cached reference image through the *exact* same preprocess ->
+    hash_matcher pipeline a scanned photo goes through at match time.
+
+    Found live: hashing the raw reference file directly (no resize, no
+    CLAHE) made every reference hash systematically different from what
+    resolve_scan() computes for the same image at scan time — most cards
+    still matched by luck (the drift stayed under the confidence
+    threshold), but some (e.g. base1-4/Charizard) drifted past it,
+    producing "no_match" against the exact image that was hashed. Reusing
+    the pipeline functions here instead of a second hand-rolled
+    implementation makes that impossible by construction.
+    """
+    image_bytes = image_path.read_bytes()
+    normalized = preprocess.preprocess_image(image_bytes, output_size)
+    return hash_matcher.compute_hashes(normalized)
 
 
 async def sync_set(
@@ -102,6 +109,7 @@ async def sync_set(
     *,
     lang: str | None = None,
     force: bool = False,
+    output_size: tuple[int, int] = (600, 825),
 ) -> dict[str, int]:
     """Sync one set's cards. Commits once at the end of the set."""
     stats = {"cards_seen": 0, "cards_hashed": 0, "cards_skipped": 0, "cards_failed": 0}
@@ -134,7 +142,7 @@ async def sync_set(
         try:
             if not image_path.exists():
                 await _download_image(http_client, image_url, image_path)
-            hashes = _compute_hashes(image_path)
+            hashes = _compute_hashes(image_path, output_size)
         except (httpx.HTTPError, OSError) as exc:
             logger.warning("Failed to fetch/hash %s: %s", card_id, exc)
             stats["cards_failed"] += 1
@@ -182,7 +190,14 @@ async def sync_sets(
             for set_id in set_ids:
                 logger.info("Syncing set %s...", set_id)
                 stats = await sync_set(
-                    db, api_client, http_client, settings.catalog_dir, set_id, lang=lang, force=force
+                    db,
+                    api_client,
+                    http_client,
+                    settings.catalog_dir,
+                    set_id,
+                    lang=lang,
+                    force=force,
+                    output_size=settings.card_output_size,
                 )
                 logger.info("Set %s done: %s", set_id, stats)
                 results[set_id] = stats

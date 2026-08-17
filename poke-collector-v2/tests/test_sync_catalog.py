@@ -6,6 +6,8 @@ tests/test_tcgdex_client.py) and skips gracefully when unreachable.
 """
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,7 +15,8 @@ from sqlalchemy.orm import sessionmaker
 from app.config import Settings
 from app.db.models import Base, Card, CardHash
 from app.integrations.tcgdex_client import TcgdexApiError, TcgdexClient
-from app.jobs.sync_catalog import _image_cache_path, _infer_variant, sync_set
+from app.jobs.sync_catalog import _compute_hashes, _image_cache_path, _infer_variant, sync_set
+from app.pipeline import hash_matcher, preprocess
 
 
 @pytest.mark.parametrize(
@@ -42,6 +45,28 @@ def test_image_cache_path_defaults_to_webp_without_extension():
     assert path.suffix == ".webp"
 
 
+def test_compute_hashes_matches_scan_time_pipeline(tmp_path):
+    """Regression: sync-time hashing must go through the exact same
+    preprocess -> hash_matcher pipeline resolve_scan() uses at scan time.
+    Hashing the raw cached file directly (no resize, no CLAHE) made
+    reference hashes drift from what scanning that same image would
+    produce — most cards still matched by luck, some (e.g. base1-4) didn't.
+    """
+    canvas = np.full((800, 900, 3), 230, dtype=np.uint8)
+    ok, buf = cv2.imencode(".png", canvas)
+    assert ok
+    image_path = tmp_path / "ref.png"
+    image_path.write_bytes(buf.tobytes())
+
+    output_size = (200, 280)
+    actual = _compute_hashes(image_path, output_size)
+    expected = hash_matcher.compute_hashes(
+        preprocess.preprocess_image(image_path.read_bytes(), output_size)
+    )
+
+    assert actual == expected
+
+
 @pytest.mark.asyncio
 async def test_sync_set_end_to_end(tmp_path):
     settings = Settings(database_path=tmp_path / "test.db", catalog_dir=tmp_path / "catalog")
@@ -56,7 +81,12 @@ async def test_sync_set_end_to_end(tmp_path):
             async with _httpx.AsyncClient(timeout=settings.http_timeout_seconds) as http_client:
                 try:
                     stats = await sync_set(
-                        db, api_client, http_client, settings.catalog_dir, "base1"
+                        db,
+                        api_client,
+                        http_client,
+                        settings.catalog_dir,
+                        "base1",
+                        output_size=settings.card_output_size,
                     )
                 except TcgdexApiError as exc:
                     pytest.skip(f"tcgdex.dev unreachable in this environment: {exc}")
