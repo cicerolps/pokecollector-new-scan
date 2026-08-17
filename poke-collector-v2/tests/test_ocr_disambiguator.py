@@ -1,9 +1,6 @@
 import numpy as np
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.db.models import Base, Card
+from app.db.models import Card
 from app.pipeline import ocr_disambiguator
 from app.pipeline.hash_matcher import Candidate
 
@@ -14,15 +11,6 @@ class _FakeReader:
 
     def readtext(self, image, detail=0):
         return [self._text]
-
-
-@pytest.fixture
-def db_session(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'test.db'}")
-    Base.metadata.create_all(bind=engine)
-    session = sessionmaker(bind=engine)()
-    yield session
-    session.close()
 
 
 def test_crop_number_region_is_smaller_than_the_full_image():

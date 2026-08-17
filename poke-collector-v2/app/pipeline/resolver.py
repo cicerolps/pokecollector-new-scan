@@ -33,6 +33,7 @@ class ScanResult:
     confidence: float | None
     candidates: list[Candidate] = field(default_factory=list)
     used_ocr_fallback: bool = False
+    scan_log_id: int | None = None
 
 
 def _confidence_score(candidate: Candidate) -> float:
@@ -50,29 +51,30 @@ def _log_scan(
     *,
     image_bytes: bytes,
     result: ScanResult,
-) -> None:
-    db.add(
-        ScanLog(
-            image_hash=_photo_hash(image_bytes),
-            matched_card_id=result.card_id,
-            confidence=result.confidence,
-            used_ocr_fallback=result.used_ocr_fallback,
-            candidates_json=json.dumps(
-                [
-                    {
-                        "card_id": c.card_id,
-                        "combined_distance": c.combined_distance,
-                        "phash_distance": c.phash_distance,
-                        "dhash_distance": c.dhash_distance,
-                        "whash_distance": c.whash_distance,
-                    }
-                    for c in result.candidates
-                ]
-            ),
-            created_at=datetime.now(timezone.utc),
-        )
+) -> int:
+    log = ScanLog(
+        image_hash=_photo_hash(image_bytes),
+        matched_card_id=result.card_id,
+        confidence=result.confidence,
+        used_ocr_fallback=result.used_ocr_fallback,
+        candidates_json=json.dumps(
+            [
+                {
+                    "card_id": c.card_id,
+                    "combined_distance": c.combined_distance,
+                    "phash_distance": c.phash_distance,
+                    "dhash_distance": c.dhash_distance,
+                    "whash_distance": c.whash_distance,
+                }
+                for c in result.candidates
+            ]
+        ),
+        created_at=datetime.now(timezone.utc),
     )
+    db.add(log)
     db.commit()
+    db.refresh(log)
+    return log.id
 
 
 def resolve_scan(
@@ -87,7 +89,7 @@ def resolve_scan(
 
     if status == "no_match":
         result = ScanResult(status="no_match", card_id=None, confidence=None, candidates=[])
-        _log_scan(db, image_bytes=image_bytes, result=result)
+        result.scan_log_id = _log_scan(db, image_bytes=image_bytes, result=result)
         return result
 
     if status == "confident":
@@ -98,7 +100,7 @@ def resolve_scan(
             confidence=_confidence_score(top),
             candidates=candidates,
         )
-        _log_scan(db, image_bytes=image_bytes, result=result)
+        result.scan_log_id = _log_scan(db, image_bytes=image_bytes, result=result)
         return result
 
     # Ambiguous: try OCR to break the tie before giving up to manual review.
@@ -111,7 +113,7 @@ def resolve_scan(
             candidates=candidates,
             used_ocr_fallback=True,
         )
-        _log_scan(db, image_bytes=image_bytes, result=result)
+        result.scan_log_id = _log_scan(db, image_bytes=image_bytes, result=result)
         return result
 
     result = ScanResult(
@@ -121,5 +123,5 @@ def resolve_scan(
         candidates=candidates[:3],
         used_ocr_fallback=True,
     )
-    _log_scan(db, image_bytes=image_bytes, result=result)
+    result.scan_log_id = _log_scan(db, image_bytes=image_bytes, result=result)
     return result

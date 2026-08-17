@@ -1,19 +1,6 @@
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 from app.config import Settings
-from app.db.models import Base, CardHash
+from app.db.models import CardHash
 from app.pipeline import hash_matcher
-
-
-@pytest.fixture
-def db_session(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'test.db'}")
-    Base.metadata.create_all(bind=engine)
-    session = sessionmaker(bind=engine)()
-    yield session
-    session.close()
 
 
 def test_hamming_distance_identical_hashes_is_zero():

@@ -6,11 +6,9 @@ photos or EasyOCR model needed.
 import cv2
 import numpy as np
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
-from app.db.models import Base, Card, CardHash
+from app.db.models import Card, CardHash
 from app.pipeline import hash_matcher, preprocess, resolver
 
 
@@ -21,15 +19,6 @@ def _synthetic_card_photo(fill_color=(40, 120, 200)) -> bytes:
     ok, buf = cv2.imencode(".png", canvas)
     assert ok
     return buf.tobytes()
-
-
-@pytest.fixture
-def db_session(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'test.db'}")
-    Base.metadata.create_all(bind=engine)
-    session = sessionmaker(bind=engine)()
-    yield session
-    session.close()
 
 
 @pytest.fixture

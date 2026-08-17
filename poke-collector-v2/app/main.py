@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import health, scan
+from app.api import collection, health, scan
 from app.db.session import init_db
 
 
@@ -20,3 +20,4 @@ app = FastAPI(
 
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(scan.router, prefix="/api/v1", tags=["scan"])
+app.include_router(collection.router, prefix="/api/v1", tags=["collection"])

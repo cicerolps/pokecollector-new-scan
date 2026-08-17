@@ -1,13 +1,7 @@
 import cv2
 import numpy as np
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.db.models import Base
-from app.db.session import get_db
-from app.main import app
+from app.db.models import Card, CardHash
 
 
 def _synthetic_card_png() -> bytes:
@@ -17,25 +11,6 @@ def _synthetic_card_png() -> bytes:
     ok, buf = cv2.imencode(".png", canvas)
     assert ok
     return buf.tobytes()
-
-
-@pytest.fixture
-def client(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'test.db'}")
-    Base.metadata.create_all(bind=engine)
-    test_session = sessionmaker(bind=engine)
-
-    def override_get_db():
-        db = test_session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
 
 
 def test_scan_endpoint_returns_no_match_on_empty_catalog(client):
@@ -48,6 +23,7 @@ def test_scan_endpoint_returns_no_match_on_empty_catalog(client):
     assert body["status"] == "no_match"
     assert body["card_id"] is None
     assert body["candidates"] == []
+    assert body["scan_log_id"] is not None
 
 
 def test_scan_endpoint_rejects_empty_upload(client):
@@ -64,3 +40,47 @@ def test_scan_endpoint_rejects_undecodable_image(client):
         files={"image": ("not-an-image.png", b"this is not a png", "image/png")},
     )
     assert response.status_code == 400
+
+
+def test_scan_confirm_updates_the_scan_log(client, db_session):
+    db_session.add(
+        Card(id="a", source_api="tcgdex", name="A", set_id="s", set_name="S", number="1/1")
+    )
+    db_session.commit()
+
+    scan_response = client.post(
+        "/api/v1/scan",
+        files={"image": ("photo.png", _synthetic_card_png(), "image/png")},
+    )
+    scan_log_id = scan_response.json()["scan_log_id"]
+
+    confirm_response = client.post(
+        "/api/v1/scan/confirm",
+        json={"scan_log_id": scan_log_id, "card_id": "a"},
+    )
+
+    assert confirm_response.status_code == 200
+    body = confirm_response.json()
+    assert body["scan_log_id"] == scan_log_id
+    assert body["card"]["id"] == "a"
+
+
+def test_scan_confirm_404s_on_unknown_scan_log(client):
+    response = client.post(
+        "/api/v1/scan/confirm", json={"scan_log_id": 999999, "card_id": "a"}
+    )
+    assert response.status_code == 404
+
+
+def test_scan_confirm_404s_on_unknown_card(client, db_session):
+    scan_response = client.post(
+        "/api/v1/scan",
+        files={"image": ("photo.png", _synthetic_card_png(), "image/png")},
+    )
+    scan_log_id = scan_response.json()["scan_log_id"]
+
+    response = client.post(
+        "/api/v1/scan/confirm",
+        json={"scan_log_id": scan_log_id, "card_id": "does-not-exist"},
+    )
+    assert response.status_code == 404
