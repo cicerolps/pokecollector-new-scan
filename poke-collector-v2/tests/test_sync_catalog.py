@@ -1,8 +1,8 @@
 """Tests for the catalog sync job.
 
 Pure-logic tests (variant inference, cache path) run everywhere. The
-end-to-end test hits pokemontcg.io for real (no mocks, same rationale as
-tests/test_pokemontcg_client.py) and skips gracefully when unreachable.
+end-to-end test hits tcgdex.dev for real (no mocks, same rationale as
+tests/test_tcgdex_client.py) and skips gracefully when unreachable.
 """
 from pathlib import Path
 
@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.db.models import Base, Card, CardHash
-from app.integrations.pokemontcg_client import PokemonTcgApiError, PokemonTcgClient
+from app.integrations.tcgdex_client import TcgdexApiError, TcgdexClient
 from app.jobs.sync_catalog import _image_cache_path, _infer_variant, sync_set
 
 
@@ -32,14 +32,14 @@ def test_infer_variant(rarity, expected):
 
 def test_image_cache_path_uses_url_extension():
     path = _image_cache_path(
-        Path("/data/catalog"), "base1-4", "https://images.pokemontcg.io/base1/4_hires.png"
+        Path("/data/catalog"), "base1-4", "https://assets.tcgdex.net/en/base/base1/4/high.webp"
     )
-    assert path == Path("/data/catalog/images/pokemontcg/base1-4.png")
+    assert path == Path("/data/catalog/images/tcgdex/base1-4.webp")
 
 
-def test_image_cache_path_defaults_to_png_without_extension():
-    path = _image_cache_path(Path("/data/catalog"), "base1-4", "https://images.pokemontcg.io/base1/4")
-    assert path.suffix == ".png"
+def test_image_cache_path_defaults_to_webp_without_extension():
+    path = _image_cache_path(Path("/data/catalog"), "base1-4", "https://assets.tcgdex.net/en/base/base1/4")
+    assert path.suffix == ".webp"
 
 
 @pytest.mark.asyncio
@@ -50,7 +50,7 @@ async def test_sync_set_end_to_end(tmp_path):
     db = sessionmaker(bind=engine)()
 
     try:
-        async with PokemonTcgClient(settings) as api_client:
+        async with TcgdexClient(settings) as api_client:
             import httpx as _httpx
 
             async with _httpx.AsyncClient(timeout=settings.http_timeout_seconds) as http_client:
@@ -58,8 +58,8 @@ async def test_sync_set_end_to_end(tmp_path):
                     stats = await sync_set(
                         db, api_client, http_client, settings.catalog_dir, "base1"
                     )
-                except PokemonTcgApiError as exc:
-                    pytest.skip(f"pokemontcg.io unreachable in this environment: {exc}")
+                except TcgdexApiError as exc:
+                    pytest.skip(f"tcgdex.dev unreachable in this environment: {exc}")
 
         assert stats["cards_hashed"] + stats["cards_skipped"] == stats["cards_seen"]
         assert stats["cards_seen"] >= 100
@@ -67,13 +67,13 @@ async def test_sync_set_end_to_end(tmp_path):
         charizard = db.get(Card, "base1-4")
         assert charizard is not None
         assert charizard.name == "Charizard"
-        assert charizard.source_api == "pokemontcg"
+        assert charizard.source_api == "tcgdex"
 
         charizard_hash = db.get(CardHash, "base1-4")
         assert charizard_hash is not None
         assert charizard_hash.phash and charizard_hash.dhash and charizard_hash.whash
 
-        cached_files = list((settings.catalog_dir / "images" / "pokemontcg").glob("*"))
+        cached_files = list((settings.catalog_dir / "images" / "tcgdex").glob("*"))
         assert cached_files, "expected at least one cached reference image on disk"
     finally:
         db.close()

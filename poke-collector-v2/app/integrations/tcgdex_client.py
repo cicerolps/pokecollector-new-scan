@@ -1,8 +1,11 @@
 """Async client for the tcgdex.dev v2 REST API.
 
-Multi-language catalog complement to pokemontcg.io (see PROJECT_SPEC.md
-section 4) — no API key required. Language is a path segment
-(`/v2/{lang}/...`), not a query param.
+Promoted to the catalog's primary source (see PROJECT_SPEC.md section 4,
+and the Fase 2 commit that made this switch): pokemontcg.io's team moved to
+the commercial Scrydex product and the legacy free API has become
+unreliable (observed live: repeated bare 500/502s). tcgdex.dev needs no API
+key and is what the original poke-collector's production backend already
+relies on. Language is a path segment (`/v2/{lang}/...`), not a query param.
 """
 from __future__ import annotations
 

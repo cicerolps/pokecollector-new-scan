@@ -1,8 +1,11 @@
 """Async client for the pokemontcg.io v2 API.
 
-Used by the catalog sync job (Fase 2) to enumerate sets/cards and download
-reference images for hashing. Key is optional — the free tier without a key
-just has a lower rate limit (see PROJECT_SPEC.md section 4).
+No longer the sync job's primary source (see app/integrations/tcgdex_client.py
+and app/jobs/sync_catalog.py) — pokemontcg.io's team moved to the commercial
+Scrydex product and the legacy free API has become unreliable in practice
+(observed live: repeated bare 500/502s independent of request shape or rate).
+Kept around as a working client in case it's useful again (e.g. as a
+secondary cross-check source), but unused by the sync job for now.
 """
 from __future__ import annotations
 
