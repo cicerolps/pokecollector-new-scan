@@ -6,11 +6,16 @@ section 4) — no API key required. Language is a path segment
 """
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
 
 from app.config import Settings, get_settings
+
+_RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
+_MAX_ATTEMPTS = 3
+_BACKOFF_BASE_SECONDS = 1.0
 
 
 class TcgdexApiError(RuntimeError):
@@ -35,17 +40,35 @@ class TcgdexClient:
         await self._client.aclose()
 
     async def _get(self, path: str) -> Any:
-        try:
-            response = await self._client.get(path)
-        except httpx.TransportError as exc:
-            raise TcgdexApiError(f"Network error calling {path}: {exc}") from exc
-        if response.status_code == 404:
-            return None
-        if response.status_code >= 400:
-            raise TcgdexApiError(
-                f"tcgdex.dev returned {response.status_code} for {path}: {response.text[:200]}"
-            )
-        return response.json()
+        """GET with retry-with-backoff on transient failures.
+
+        Same rationale as PokemonTcgClient._get: this job runs unattended
+        from a systemd timer, so a bare 5xx shouldn't kill the whole run.
+        4xx errors are not retried.
+        """
+        last_error: TcgdexApiError | None = None
+        for attempt in range(1, _MAX_ATTEMPTS + 1):
+            try:
+                response = await self._client.get(path)
+            except httpx.TransportError as exc:
+                last_error = TcgdexApiError(f"Network error calling {path}: {exc}")
+            else:
+                if response.status_code == 404:
+                    return None
+                if response.status_code not in _RETRYABLE_STATUS_CODES:
+                    if response.status_code >= 400:
+                        raise TcgdexApiError(
+                            f"tcgdex.dev returned {response.status_code} for {path}: "
+                            f"{response.text[:200]}"
+                        )
+                    return response.json()
+                last_error = TcgdexApiError(
+                    f"tcgdex.dev returned {response.status_code} for {path}: {response.text[:200]}"
+                )
+            if attempt < _MAX_ATTEMPTS:
+                await asyncio.sleep(_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)))
+        assert last_error is not None
+        raise last_error
 
     async def list_sets(self, *, lang: str | None = None) -> list[dict[str, Any]]:
         lang = lang or self._settings.tcgdex_default_lang

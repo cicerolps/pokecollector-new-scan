@@ -6,11 +6,16 @@ just has a lower rate limit (see PROJECT_SPEC.md section 4).
 """
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
 
 from app.config import Settings, get_settings
+
+_RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
+_MAX_ATTEMPTS = 3
+_BACKOFF_BASE_SECONDS = 1.0
 
 
 class PokemonTcgApiError(RuntimeError):
@@ -41,17 +46,36 @@ class PokemonTcgClient:
     async def _get(
         self, path: str, params: dict[str, Any] | None = None
     ) -> dict[str, Any] | None:
-        try:
-            response = await self._client.get(path, params=params)
-        except httpx.TransportError as exc:
-            raise PokemonTcgApiError(f"Network error calling {path}: {exc}") from exc
-        if response.status_code == 404:
-            return None
-        if response.status_code >= 400:
-            raise PokemonTcgApiError(
-                f"pokemontcg.io returned {response.status_code} for {path}: {response.text[:200]}"
-            )
-        return response.json()
+        """GET with retry-with-backoff on transient failures.
+
+        pokemontcg.io's search backend occasionally returns a bare 5xx (no
+        body) under load — observed live against /cards with a query filter.
+        Retried up to _MAX_ATTEMPTS times since this job is meant to run
+        unattended from a systemd timer; 4xx errors are not retried.
+        """
+        last_error: PokemonTcgApiError | None = None
+        for attempt in range(1, _MAX_ATTEMPTS + 1):
+            try:
+                response = await self._client.get(path, params=params)
+            except httpx.TransportError as exc:
+                last_error = PokemonTcgApiError(f"Network error calling {path}: {exc}")
+            else:
+                if response.status_code == 404:
+                    return None
+                if response.status_code not in _RETRYABLE_STATUS_CODES:
+                    if response.status_code >= 400:
+                        raise PokemonTcgApiError(
+                            f"pokemontcg.io returned {response.status_code} for {path}: "
+                            f"{response.text[:200]}"
+                        )
+                    return response.json()
+                last_error = PokemonTcgApiError(
+                    f"pokemontcg.io returned {response.status_code} for {path}: {response.text[:200]}"
+                )
+            if attempt < _MAX_ATTEMPTS:
+                await asyncio.sleep(_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)))
+        assert last_error is not None
+        raise last_error
 
     async def list_sets(self, *, page: int = 1, page_size: int = 250) -> list[dict[str, Any]]:
         """Return the set list (id, name, series, releaseDate, images, ...)."""
