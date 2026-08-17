@@ -30,9 +30,27 @@ class Settings(BaseSettings):
 
     http_timeout_seconds: float = 30.0
 
+    # Pipeline (Fase 3-4) — see PROJECT_SPEC.md section 3
+    card_output_width: int = 600
+    card_output_height: int = 825
+    hash_match_top_n: int = 5
+    # Candidate #1 is accepted directly when its combined Hamming distance is
+    # at least this much lower than candidate #2's; otherwise OCR
+    # disambiguation kicks in (PROJECT_SPEC.md 3.2).
+    hash_confidence_gap: int = 10
+    # Below this combined distance for candidate #1, treat as no match at all
+    # rather than a low-confidence guess.
+    hash_no_match_distance: int = 60
+    easyocr_model_dir: Path = Path("/opt/easyocr-models")
+    easyocr_languages: tuple[str, ...] = ("en",)
+
     @property
     def database_url(self) -> str:
         return f"sqlite:///{self.database_path}"
+
+    @property
+    def card_output_size(self) -> tuple[int, int]:
+        return (self.card_output_width, self.card_output_height)
 
 
 @lru_cache
