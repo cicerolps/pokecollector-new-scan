@@ -88,7 +88,14 @@ def resolve_scan(
     )
 
     if status == "no_match":
-        result = ScanResult(status="no_match", card_id=None, confidence=None, candidates=[])
+        # Keep whatever candidates hash_matcher found (even though none
+        # cleared the no-match distance threshold) instead of discarding
+        # them — seeing how close the nearest one got is the difference
+        # between "catalog doesn't have this card" and "threshold needs
+        # recalibrating" or "preprocessing produced a bad crop".
+        result = ScanResult(
+            status="no_match", card_id=None, confidence=None, candidates=candidates[:3]
+        )
         result.scan_log_id = _log_scan(db, image_bytes=image_bytes, result=result)
         return result
 

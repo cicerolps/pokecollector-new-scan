@@ -45,6 +45,28 @@ def test_resolve_scan_no_match_with_empty_catalog(db_session, settings):
     result = resolver.resolve_scan(db_session, _synthetic_card_photo(), settings=settings)
     assert result.status == "no_match"
     assert result.card_id is None
+    assert result.candidates == []
+
+
+def test_resolve_scan_no_match_still_surfaces_distant_candidates(db_session, settings, monkeypatch):
+    """A far-but-not-empty catalog should return diagnostic candidates
+    instead of silently discarding them — that's the difference between
+    "catalog doesn't have this card" and "threshold needs recalibrating".
+    Hash distances aren't deterministic enough to force via real images, so
+    match_with_rotations is stubbed to return a controlled no_match result.
+    """
+    distant_candidate = hash_matcher.Candidate("unrelated", 40, 40, 40)  # combined 120
+
+    def fake_match_with_rotations(db, image, *, settings=None):
+        return "no_match", [distant_candidate], image
+
+    monkeypatch.setattr(resolver.hash_matcher, "match_with_rotations", fake_match_with_rotations)
+
+    result = resolver.resolve_scan(db_session, _synthetic_card_photo(), settings=settings)
+
+    assert result.status == "no_match"
+    assert result.card_id is None
+    assert result.candidates == [distant_candidate]
 
 
 def test_resolve_scan_confident_match(db_session, settings):
