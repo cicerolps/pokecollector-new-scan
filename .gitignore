@@ -23,3 +23,9 @@ frontend/test-results-webkit/
 # Generated JWT signing key (never commit)
 backend/data/auth/
 data/auth/
+
+# poke-collector-v2: SQLite DB + card catalog/hash images are runtime-only,
+# populated by the sync job into the mounted volume — never committed.
+/poke-collector-v2/data/**
+!/poke-collector-v2/data/catalog/
+!/poke-collector-v2/data/catalog/.gitkeep

@@ -1,0 +1,25 @@
+services:
+  poke-collector-v2:
+    build: .
+    image: poke-collector-v2:local
+    container_name: poke-collector-v2
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      DATABASE_PATH: /app/data/db/poke_collector.db
+      CATALOG_DIR: /app/data/catalog
+      POKEMONTCG_API_KEY: ${POKEMONTCG_API_KEY:-}
+    volumes:
+      # Persistent volume for the SQLite DB + card catalog/hash images.
+      # NEVER baked into the image — see PROJECT_SPEC.md section 4.0.
+      - ./data:/app/data
+    networks:
+      - netservices
+    ports:
+      - "8000:8000"
+
+networks:
+  netservices:
+    external: true
