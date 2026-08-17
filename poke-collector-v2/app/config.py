@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     easyocr_model_dir: Path = Path("/opt/easyocr-models")
     easyocr_languages: tuple[str, ...] = ("en",)
 
+    # Price cache TTL (PROJECT_SPEC.md 4.2) — separate from the permanent
+    # identification hash cache, since prices actually change over time.
+    price_cache_ttl_hours: int = 24
+
     @property
     def database_url(self) -> str:
         return f"sqlite:///{self.database_path}"
