@@ -17,6 +17,16 @@ import numpy as np
 # considered "the card" rather than noise/background clutter.
 _MIN_CONTOUR_AREA_FRACTION = 0.15
 
+# A Pokemon card is ~2.5x3.5in — reject 4-point contours that don't
+# roughly match that ratio (checked both ways since we don't know
+# orientation yet). Found live: without this, a busy card illustration
+# with no photographed background at all (i.e. an already-cropped
+# reference image) can have a strong internal edge — e.g. part of the
+# artwork — that Canny/approxPolyDP mistakes for "the card", producing a
+# wrong, non-card-shaped crop instead of falling back to the whole frame.
+_CARD_ASPECT_RATIO = 2.5 / 3.5
+_ASPECT_RATIO_TOLERANCE = 0.18
+
 
 def _order_corners(points: np.ndarray) -> np.ndarray:
     """Order 4 points as top-left, top-right, bottom-right, bottom-left."""
@@ -28,6 +38,14 @@ def _order_corners(points: np.ndarray) -> np.ndarray:
     rect[1] = points[np.argmin(diff)]
     rect[3] = points[np.argmax(diff)]
     return rect
+
+
+def _is_card_shaped(contour: np.ndarray) -> bool:
+    (_, (w, h), _) = cv2.minAreaRect(contour)
+    if w <= 0 or h <= 0:
+        return False
+    ratio = min(w, h) / max(w, h)
+    return abs(ratio - _CARD_ASPECT_RATIO) <= _ASPECT_RATIO_TOLERANCE
 
 
 def find_card_corners(image: np.ndarray) -> np.ndarray | None:
@@ -52,6 +70,8 @@ def find_card_corners(image: np.ndarray) -> np.ndarray | None:
     for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:10]:
         area = cv2.contourArea(contour)
         if area < image_area * _MIN_CONTOUR_AREA_FRACTION:
+            continue
+        if not _is_card_shaped(contour):
             continue
         perimeter = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)

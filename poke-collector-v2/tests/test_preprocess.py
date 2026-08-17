@@ -34,6 +34,20 @@ def test_find_card_corners_returns_none_without_a_shape():
     assert find_card_corners(blank) is None
 
 
+def test_find_card_corners_rejects_non_card_shaped_internal_contour():
+    """Regression: found live against a real reference image (no
+    photographed background at all — the whole frame IS the card) where a
+    high-contrast region within the artwork itself formed a clean 4-point
+    contour that passed the area threshold but had nothing like a card's
+    aspect ratio. Before this check it got accepted as "the card" and
+    warped into a wrong, unrelated-looking crop.
+    """
+    canvas = np.full((1000, 800, 3), 230, dtype=np.uint8)
+    banner = np.array([(50, 400), (750, 400), (750, 600), (50, 600)], dtype=np.int32)
+    cv2.fillConvexPoly(canvas, banner, (10, 10, 10))
+    assert find_card_corners(canvas) is None
+
+
 def test_preprocess_image_isolates_the_card_region():
     fill_color = (40, 120, 200)  # BGR
     corners = [(220, 90), (710, 130), (680, 690), (190, 660)]  # slightly skewed
