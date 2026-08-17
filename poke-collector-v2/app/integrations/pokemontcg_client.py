@@ -94,10 +94,16 @@ class PokemonTcgClient:
         page: int = 1,
         page_size: int = 250,
     ) -> list[dict[str, Any]]:
-        """Return cards for a set (or matching a Lucene-style `query`)."""
+        """Return cards for a set (or matching a Lucene-style `query`).
+
+        set_id is deliberately unquoted in the query: pokemontcg.io's search
+        backend returns a bare 500 for a quoted `set.id:"..."` filter
+        (confirmed live), and set IDs are plain slugs (e.g. "base1",
+        "swsh1") that never need quoting anyway.
+        """
         q_parts = []
         if set_id:
-            q_parts.append(f'set.id:"{set_id}"')
+            q_parts.append(f"set.id:{set_id}")
         if query:
             q_parts.append(query)
         params: dict[str, Any] = {"page": page, "pageSize": page_size}

@@ -58,3 +58,22 @@ async def test_list_cards_for_set(client: PokemonTcgClient):
     cards = await _skip_if_unreachable(client.list_cards(set_id="base1", page_size=250))
     assert len(cards) >= 100
     assert all(c["set"]["id"] == "base1" for c in cards)
+
+
+@pytest.mark.asyncio
+async def test_list_cards_builds_unquoted_set_id_query(client: PokemonTcgClient, monkeypatch):
+    """Regression test: a quoted set.id:"..." filter gets a bare 500 from the
+    real API (confirmed live), so the query must stay unquoted. No network
+    needed — this only checks the params passed to _get.
+    """
+    captured = {}
+
+    async def fake_get(path, params=None):
+        captured["path"] = path
+        captured["params"] = params
+        return {"data": []}
+
+    monkeypatch.setattr(client, "_get", fake_get)
+    await client.list_cards(set_id="base1")
+
+    assert captured["params"]["q"] == "set.id:base1"
