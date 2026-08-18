@@ -12,6 +12,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import app.jobs.sync_catalog as sync_catalog_module
 from app.config import Settings
 from app.db.models import Base, Card, CardHash
 from app.integrations.tcgdex_client import TcgdexApiError, TcgdexClient
@@ -107,3 +108,43 @@ async def test_sync_set_end_to_end(tmp_path):
         assert cached_files, "expected at least one cached reference image on disk"
     finally:
         db.close()
+
+
+@pytest.mark.asyncio
+async def test_sync_sets_continues_after_one_set_fails(tmp_path, monkeypatch):
+    """Regression: found live on a full-catalog --all run — a single flaky
+    set (transient network error outlasting the client's own retries)
+    aborted the whole multi-hour job and discarded every set queued after
+    it. One set failing must not stop the rest.
+    """
+    settings = Settings(database_path=tmp_path / "test.db", catalog_dir=tmp_path / "catalog")
+
+    calls: list[str] = []
+
+    async def fake_sync_set(
+        db, api_client, http_client, catalog_dir, set_id, *, lang=None, force=False, output_size=(600, 825)
+    ):
+        calls.append(set_id)
+        if set_id == "bad-set":
+            raise TcgdexApiError("boom")
+        return {"cards_seen": 1, "cards_hashed": 1, "cards_skipped": 0, "cards_failed": 0}
+
+    class _FakeTcgdexClient:
+        def __init__(self, settings=None):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc_info):
+            return False
+
+    monkeypatch.setattr(sync_catalog_module, "sync_set", fake_sync_set)
+    monkeypatch.setattr(sync_catalog_module, "TcgdexClient", _FakeTcgdexClient)
+
+    results = await sync_catalog_module.sync_sets(
+        ["good-1", "bad-set", "good-2"], settings=settings
+    )
+
+    assert calls == ["good-1", "bad-set", "good-2"]
+    assert set(results.keys()) == {"good-1", "good-2"}

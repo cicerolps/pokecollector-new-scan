@@ -183,26 +183,48 @@ async def sync_sets(
     init_db()
     db = SessionLocal()
     results: dict[str, dict[str, int]] = {}
+    failed_sets: list[str] = []
     try:
         async with TcgdexClient(settings) as api_client, httpx.AsyncClient(
             timeout=settings.http_timeout_seconds
         ) as http_client:
             for set_id in set_ids:
                 logger.info("Syncing set %s...", set_id)
-                stats = await sync_set(
-                    db,
-                    api_client,
-                    http_client,
-                    settings.catalog_dir,
-                    set_id,
-                    lang=lang,
-                    force=force,
-                    output_size=settings.card_output_size,
-                )
+                try:
+                    stats = await sync_set(
+                        db,
+                        api_client,
+                        http_client,
+                        settings.catalog_dir,
+                        set_id,
+                        lang=lang,
+                        force=force,
+                        output_size=settings.card_output_size,
+                    )
+                except Exception:
+                    # A single flaky set (network blip that outlasts the
+                    # client's own retries, an unexpected API response
+                    # shape, ...) must not abort a multi-hour --all run and
+                    # discard every set queued after it. Roll back any
+                    # partial work from this set and move on; re-running the
+                    # job later only redoes sets that never finished, since
+                    # already-hashed cards are skipped (see sync_set).
+                    logger.exception("Set %s failed, skipping it for this run", set_id)
+                    db.rollback()
+                    failed_sets.append(set_id)
+                    continue
                 logger.info("Set %s done: %s", set_id, stats)
                 results[set_id] = stats
     finally:
         db.close()
+
+    if failed_sets:
+        logger.warning(
+            "%d/%d sets failed and were skipped: %s",
+            len(failed_sets),
+            len(set_ids),
+            ", ".join(failed_sets),
+        )
     return results
 
 
