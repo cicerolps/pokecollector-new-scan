@@ -1211,9 +1211,6 @@ const en = {
     dailyQuotaRetry: 'Daily quota reached · {countdown}',
     dailyQuotaWaiting: 'Daily quota reached · Waiting to retry…',
     retryIndividually: 'Retry individually',
-    scanIndividually: 'Scan individually',
-    scanAllIndividually: 'Scan all individually',
-    useAutomaticGrouping: 'Use automatic grouping',
   },
 
   // Language filter / card language
