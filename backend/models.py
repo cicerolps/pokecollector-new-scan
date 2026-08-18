@@ -156,6 +156,28 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class CardHash(Base):
+    """Perceptual hashes of a catalogue card's reference image.
+
+    Local, deterministic scan replacement for the Gemini-based recognizer
+    (see backend/services/card_recognition_*.py): the photo's own hashes are
+    compared against this table instead of asking an LLM what the card is.
+    One row per Card.id, so it naturally follows the same composite
+    {tcg_card_id}_{lang} keying the catalogue already uses — a German and an
+    English printing of the same card get independent rows, even when they
+    happen to hash close to each other.
+    """
+    __tablename__ = "card_hashes"
+
+    card_id = Column(String, ForeignKey("cards.id", ondelete="CASCADE"), primary_key=True)
+    phash = Column(String)
+    dhash = Column(String)
+    whash = Column(String)
+    hashed_at = Column(DateTime, default=func.now())
+
+    card = relationship("Card")
+
+
 class CollectionItem(Base):
     __tablename__ = "collection"
 

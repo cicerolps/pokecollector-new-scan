@@ -17,3 +17,8 @@ alembic==1.13.1
 bcrypt
 python-jose[cryptography]
 slowapi==0.1.9
+
+# Local card scanner (replaces Gemini — see services/card_scan_*.py)
+opencv-python-headless==4.10.0.84
+imagehash==4.3.1
+easyocr==1.7.2
