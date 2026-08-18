@@ -7,7 +7,13 @@ same pattern as the homelab's other scripts):
     python -m app.jobs.sync_catalog --sets base1 --force
     python -m app.jobs.sync_catalog --all
 
-pokemontcg.io is the catalog's primary source (PROJECT_SPEC.md section 4).
+tcgdex.dev is the catalog's primary source: pokemontcg.io's team moved to
+the commercial Scrydex product and the legacy free API has become
+unreliable in practice (repeated bare 500/502s observed live, independent
+of request shape or rate) — see app/integrations/pokemontcg_client.py.
+tcgdex.dev needs no API key and is what this project's original production
+backend already relies on.
+
 For each card: downloads its reference image into Settings.catalog_dir
 (cached on disk, never re-downloaded once present), computes phash/dhash/
 whash, and upserts app.db.models.Card / CardHash.
@@ -27,19 +33,17 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-import imagehash
-from PIL import Image
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.db.models import Card, CardHash
 from app.db.session import SessionLocal, init_db
-from app.integrations.pokemontcg_client import PokemonTcgClient
+from app.integrations.tcgdex_client import TcgdexClient
+from app.pipeline import hash_matcher, preprocess
 
 logger = logging.getLogger("sync_catalog")
 
-SOURCE_API = "pokemontcg"
-PAGE_SIZE = 250
+SOURCE_API = "tcgdex"
 
 
 def _utcnow() -> datetime:
@@ -47,18 +51,19 @@ def _utcnow() -> datetime:
 
 
 def _image_cache_path(catalog_dir: Path, card_id: str, url: str) -> Path:
-    suffix = Path(httpx.URL(url).path).suffix or ".png"
+    suffix = Path(httpx.URL(url).path).suffix or ".webp"
     return catalog_dir / "images" / SOURCE_API / f"{card_id}{suffix}"
 
 
 def _infer_variant(rarity: str | None) -> str:
     """Best-effort tag from the printed rarity string.
 
-    pokemontcg.io ties variant availability (normal/holo/reverse) to
-    tcgplayer price buckets rather than a single flag on the card, and a
-    single reference image can't represent multiple physical foil variants
-    anyway. This is a coarse label for now, not a source of per-variant
-    hashes — revisit if Fase 3 accuracy testing shows it matters.
+    tcgdex.dev's brief per-set card listing doesn't include rarity (only a
+    full per-card fetch does, which we skip here to keep the sync job to one
+    request per set — see sync_set). rarity is always None for now, so this
+    always returns "normal". A single reference image can't represent
+    multiple physical foil variants anyway — revisit if Fase 3 accuracy
+    testing shows it matters.
     """
     if not rarity:
         return "normal"
@@ -70,20 +75,6 @@ def _infer_variant(rarity: str | None) -> str:
     return "normal"
 
 
-async def _fetch_all_cards(api_client: PokemonTcgClient, set_id: str) -> list[dict[str, Any]]:
-    all_cards: list[dict[str, Any]] = []
-    page = 1
-    while True:
-        batch = await api_client.list_cards(set_id=set_id, page=page, page_size=PAGE_SIZE)
-        if not batch:
-            break
-        all_cards.extend(batch)
-        if len(batch) < PAGE_SIZE:
-            break
-        page += 1
-    return all_cards
-
-
 async def _download_image(http_client: httpx.AsyncClient, url: str, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     response = await http_client.get(url)
@@ -91,36 +82,47 @@ async def _download_image(http_client: httpx.AsyncClient, url: str, dest: Path) 
     dest.write_bytes(response.content)
 
 
-def _compute_hashes(image_path: Path) -> dict[str, str]:
-    with Image.open(image_path) as img:
-        img = img.convert("RGB")
-        return {
-            "phash": str(imagehash.phash(img)),
-            "dhash": str(imagehash.dhash(img)),
-            "whash": str(imagehash.whash(img)),
-        }
+def _compute_hashes(image_path: Path, output_size: tuple[int, int]) -> dict[str, str]:
+    """Hash a cached reference image through the *exact* same preprocess ->
+    hash_matcher pipeline a scanned photo goes through at match time.
+
+    Found live: hashing the raw reference file directly (no resize, no
+    CLAHE) made every reference hash systematically different from what
+    resolve_scan() computes for the same image at scan time — most cards
+    still matched by luck (the drift stayed under the confidence
+    threshold), but some (e.g. base1-4/Charizard) drifted past it,
+    producing "no_match" against the exact image that was hashed. Reusing
+    the pipeline functions here instead of a second hand-rolled
+    implementation makes that impossible by construction.
+    """
+    image_bytes = image_path.read_bytes()
+    normalized = preprocess.preprocess_image(image_bytes, output_size)
+    return hash_matcher.compute_hashes(normalized)
 
 
 async def sync_set(
     db: Session,
-    api_client: PokemonTcgClient,
+    api_client: TcgdexClient,
     http_client: httpx.AsyncClient,
     catalog_dir: Path,
     set_id: str,
     *,
+    lang: str | None = None,
     force: bool = False,
+    output_size: tuple[int, int] = (600, 825),
 ) -> dict[str, int]:
     """Sync one set's cards. Commits once at the end of the set."""
     stats = {"cards_seen": 0, "cards_hashed": 0, "cards_skipped": 0, "cards_failed": 0}
 
-    set_data = await api_client.get_set(set_id)
+    set_data = await api_client.get_set(set_id, lang=lang)
     if set_data is None:
-        logger.warning("Set %s not found on pokemontcg.io, skipping", set_id)
+        logger.warning("Set %s not found on tcgdex.dev, skipping", set_id)
         return stats
     set_name = set_data.get("name", set_id)
-    printed_total = set_data.get("printedTotal")
+    card_count = set_data.get("cardCount") or {}
+    printed_total = card_count.get("official")
 
-    cards = await _fetch_all_cards(api_client, set_id)
+    cards = set_data.get("cards", [])
     for card_data in cards:
         stats["cards_seen"] += 1
         card_id = card_data["id"]
@@ -129,25 +131,25 @@ async def sync_set(
             stats["cards_skipped"] += 1
             continue
 
-        images = card_data.get("images") or {}
-        image_url = images.get("large") or images.get("small")
-        if not image_url:
+        image_base = card_data.get("image")
+        if not image_base:
             logger.warning("Card %s has no reference image, skipping", card_id)
             stats["cards_failed"] += 1
             continue
+        image_url = f"{image_base}/high.webp"
 
         image_path = _image_cache_path(catalog_dir, card_id, image_url)
         try:
             if not image_path.exists():
                 await _download_image(http_client, image_url, image_path)
-            hashes = _compute_hashes(image_path)
+            hashes = _compute_hashes(image_path, output_size)
         except (httpx.HTTPError, OSError) as exc:
             logger.warning("Failed to fetch/hash %s: %s", card_id, exc)
             stats["cards_failed"] += 1
             continue
 
-        raw_number = card_data.get("number", "")
-        number = f"{raw_number}/{printed_total}" if printed_total else raw_number
+        raw_number = card_data.get("localId", "")
+        number = f"{raw_number}/{printed_total}" if printed_total else str(raw_number)
 
         db.merge(
             Card(
@@ -170,34 +172,71 @@ async def sync_set(
     return stats
 
 
-async def sync_sets(set_ids: list[str], *, settings: Settings | None = None, force: bool = False) -> dict[str, dict[str, int]]:
+async def sync_sets(
+    set_ids: list[str],
+    *,
+    settings: Settings | None = None,
+    lang: str | None = None,
+    force: bool = False,
+) -> dict[str, dict[str, int]]:
     settings = settings or get_settings()
     init_db()
     db = SessionLocal()
     results: dict[str, dict[str, int]] = {}
+    failed_sets: list[str] = []
     try:
-        async with PokemonTcgClient(settings) as api_client, httpx.AsyncClient(
+        async with TcgdexClient(settings) as api_client, httpx.AsyncClient(
             timeout=settings.http_timeout_seconds
         ) as http_client:
             for set_id in set_ids:
                 logger.info("Syncing set %s...", set_id)
-                stats = await sync_set(
-                    db, api_client, http_client, settings.catalog_dir, set_id, force=force
-                )
+                try:
+                    stats = await sync_set(
+                        db,
+                        api_client,
+                        http_client,
+                        settings.catalog_dir,
+                        set_id,
+                        lang=lang,
+                        force=force,
+                        output_size=settings.card_output_size,
+                    )
+                except Exception:
+                    # A single flaky set (network blip that outlasts the
+                    # client's own retries, an unexpected API response
+                    # shape, ...) must not abort a multi-hour --all run and
+                    # discard every set queued after it. Roll back any
+                    # partial work from this set and move on; re-running the
+                    # job later only redoes sets that never finished, since
+                    # already-hashed cards are skipped (see sync_set).
+                    logger.exception("Set %s failed, skipping it for this run", set_id)
+                    db.rollback()
+                    failed_sets.append(set_id)
+                    continue
                 logger.info("Set %s done: %s", set_id, stats)
                 results[set_id] = stats
     finally:
         db.close()
+
+    if failed_sets:
+        logger.warning(
+            "%d/%d sets failed and were skipped: %s",
+            len(failed_sets),
+            len(set_ids),
+            ", ".join(failed_sets),
+        )
     return results
 
 
-async def sync_all(*, settings: Settings | None = None, force: bool = False) -> dict[str, dict[str, int]]:
+async def sync_all(
+    *, settings: Settings | None = None, lang: str | None = None, force: bool = False
+) -> dict[str, dict[str, int]]:
     settings = settings or get_settings()
-    async with PokemonTcgClient(settings) as api_client:
-        all_sets = await api_client.list_sets()
+    async with TcgdexClient(settings) as api_client:
+        all_sets = await api_client.list_sets(lang=lang)
     set_ids = [s["id"] for s in all_sets]
     logger.info("Found %d sets to sync", len(set_ids))
-    return await sync_sets(set_ids, settings=settings, force=force)
+    return await sync_sets(set_ids, settings=settings, lang=lang, force=force)
 
 
 def main() -> None:
@@ -206,6 +245,7 @@ def main() -> None:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--sets", help="Comma-separated set IDs to sync (e.g. base1,base2)")
     group.add_argument("--all", action="store_true", help="Sync every set in the catalog")
+    parser.add_argument("--lang", default=None, help="tcgdex.dev language code (default: en)")
     parser.add_argument(
         "--force",
         action="store_true",
@@ -214,10 +254,10 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.all:
-        asyncio.run(sync_all(force=args.force))
+        asyncio.run(sync_all(lang=args.lang, force=args.force))
     else:
         set_ids = [s.strip() for s in args.sets.split(",") if s.strip()]
-        asyncio.run(sync_sets(set_ids, force=args.force))
+        asyncio.run(sync_sets(set_ids, lang=args.lang, force=args.force))
 
 
 if __name__ == "__main__":

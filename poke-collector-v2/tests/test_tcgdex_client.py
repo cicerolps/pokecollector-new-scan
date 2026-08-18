@@ -5,7 +5,7 @@ Same rationale as test_pokemontcg_client.py: real requests, no mocks, skip
 """
 import pytest
 
-from app.integrations.tcgdex_client import TcgdexApiError, TcgdexClient
+from app.integrations.tcgdex_client import TcgdexApiError, TcgdexClient, extract_market_price
 
 
 @pytest.fixture
@@ -54,3 +54,18 @@ async def test_get_card_missing_returns_none(client: TcgdexClient):
 async def test_list_set_cards(client: TcgdexClient):
     cards = await _skip_if_unreachable(client.list_set_cards("base1", lang="en"))
     assert len(cards) >= 100
+
+
+def test_extract_market_price_prefers_avg():
+    card_data = {"pricing": {"cardmarket": {"avg": 12.5, "trend": 10.0, "low": 8.0}}}
+    assert extract_market_price(card_data) == (12.5, "EUR")
+
+
+def test_extract_market_price_falls_back_to_trend_then_low():
+    assert extract_market_price({"pricing": {"cardmarket": {"trend": 10.0, "low": 8.0}}}) == (10.0, "EUR")
+    assert extract_market_price({"pricing": {"cardmarket": {"low": 8.0}}}) == (8.0, "EUR")
+
+
+def test_extract_market_price_returns_none_without_cardmarket_data():
+    assert extract_market_price({}) == (None, None)
+    assert extract_market_price({"pricing": {"cardmarket": {}}}) == (None, None)

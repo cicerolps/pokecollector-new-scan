@@ -72,7 +72,9 @@ class CardPrice(Base):
 
 
 class CollectionItem(Base):
-    """User's collection — preserved/migrated from the original poke-collector."""
+    """User's collection. Fresh table — no migration from the original
+    poke-collector container (confirmed with the user: no data worth
+    preserving there)."""
 
     __tablename__ = "collection_items"
 

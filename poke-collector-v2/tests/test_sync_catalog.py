@@ -1,19 +1,23 @@
 """Tests for the catalog sync job.
 
 Pure-logic tests (variant inference, cache path) run everywhere. The
-end-to-end test hits pokemontcg.io for real (no mocks, same rationale as
-tests/test_pokemontcg_client.py) and skips gracefully when unreachable.
+end-to-end test hits tcgdex.dev for real (no mocks, same rationale as
+tests/test_tcgdex_client.py) and skips gracefully when unreachable.
 """
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import app.jobs.sync_catalog as sync_catalog_module
 from app.config import Settings
 from app.db.models import Base, Card, CardHash
-from app.integrations.pokemontcg_client import PokemonTcgApiError, PokemonTcgClient
-from app.jobs.sync_catalog import _image_cache_path, _infer_variant, sync_set
+from app.integrations.tcgdex_client import TcgdexApiError, TcgdexClient
+from app.jobs.sync_catalog import _compute_hashes, _image_cache_path, _infer_variant, sync_set
+from app.pipeline import hash_matcher, preprocess
 
 
 @pytest.mark.parametrize(
@@ -32,14 +36,36 @@ def test_infer_variant(rarity, expected):
 
 def test_image_cache_path_uses_url_extension():
     path = _image_cache_path(
-        Path("/data/catalog"), "base1-4", "https://images.pokemontcg.io/base1/4_hires.png"
+        Path("/data/catalog"), "base1-4", "https://assets.tcgdex.net/en/base/base1/4/high.webp"
     )
-    assert path == Path("/data/catalog/images/pokemontcg/base1-4.png")
+    assert path == Path("/data/catalog/images/tcgdex/base1-4.webp")
 
 
-def test_image_cache_path_defaults_to_png_without_extension():
-    path = _image_cache_path(Path("/data/catalog"), "base1-4", "https://images.pokemontcg.io/base1/4")
-    assert path.suffix == ".png"
+def test_image_cache_path_defaults_to_webp_without_extension():
+    path = _image_cache_path(Path("/data/catalog"), "base1-4", "https://assets.tcgdex.net/en/base/base1/4")
+    assert path.suffix == ".webp"
+
+
+def test_compute_hashes_matches_scan_time_pipeline(tmp_path):
+    """Regression: sync-time hashing must go through the exact same
+    preprocess -> hash_matcher pipeline resolve_scan() uses at scan time.
+    Hashing the raw cached file directly (no resize, no CLAHE) made
+    reference hashes drift from what scanning that same image would
+    produce — most cards still matched by luck, some (e.g. base1-4) didn't.
+    """
+    canvas = np.full((800, 900, 3), 230, dtype=np.uint8)
+    ok, buf = cv2.imencode(".png", canvas)
+    assert ok
+    image_path = tmp_path / "ref.png"
+    image_path.write_bytes(buf.tobytes())
+
+    output_size = (200, 280)
+    actual = _compute_hashes(image_path, output_size)
+    expected = hash_matcher.compute_hashes(
+        preprocess.preprocess_image(image_path.read_bytes(), output_size)
+    )
+
+    assert actual == expected
 
 
 @pytest.mark.asyncio
@@ -50,16 +76,21 @@ async def test_sync_set_end_to_end(tmp_path):
     db = sessionmaker(bind=engine)()
 
     try:
-        async with PokemonTcgClient(settings) as api_client:
+        async with TcgdexClient(settings) as api_client:
             import httpx as _httpx
 
             async with _httpx.AsyncClient(timeout=settings.http_timeout_seconds) as http_client:
                 try:
                     stats = await sync_set(
-                        db, api_client, http_client, settings.catalog_dir, "base1"
+                        db,
+                        api_client,
+                        http_client,
+                        settings.catalog_dir,
+                        "base1",
+                        output_size=settings.card_output_size,
                     )
-                except PokemonTcgApiError as exc:
-                    pytest.skip(f"pokemontcg.io unreachable in this environment: {exc}")
+                except TcgdexApiError as exc:
+                    pytest.skip(f"tcgdex.dev unreachable in this environment: {exc}")
 
         assert stats["cards_hashed"] + stats["cards_skipped"] == stats["cards_seen"]
         assert stats["cards_seen"] >= 100
@@ -67,13 +98,53 @@ async def test_sync_set_end_to_end(tmp_path):
         charizard = db.get(Card, "base1-4")
         assert charizard is not None
         assert charizard.name == "Charizard"
-        assert charizard.source_api == "pokemontcg"
+        assert charizard.source_api == "tcgdex"
 
         charizard_hash = db.get(CardHash, "base1-4")
         assert charizard_hash is not None
         assert charizard_hash.phash and charizard_hash.dhash and charizard_hash.whash
 
-        cached_files = list((settings.catalog_dir / "images" / "pokemontcg").glob("*"))
+        cached_files = list((settings.catalog_dir / "images" / "tcgdex").glob("*"))
         assert cached_files, "expected at least one cached reference image on disk"
     finally:
         db.close()
+
+
+@pytest.mark.asyncio
+async def test_sync_sets_continues_after_one_set_fails(tmp_path, monkeypatch):
+    """Regression: found live on a full-catalog --all run — a single flaky
+    set (transient network error outlasting the client's own retries)
+    aborted the whole multi-hour job and discarded every set queued after
+    it. One set failing must not stop the rest.
+    """
+    settings = Settings(database_path=tmp_path / "test.db", catalog_dir=tmp_path / "catalog")
+
+    calls: list[str] = []
+
+    async def fake_sync_set(
+        db, api_client, http_client, catalog_dir, set_id, *, lang=None, force=False, output_size=(600, 825)
+    ):
+        calls.append(set_id)
+        if set_id == "bad-set":
+            raise TcgdexApiError("boom")
+        return {"cards_seen": 1, "cards_hashed": 1, "cards_skipped": 0, "cards_failed": 0}
+
+    class _FakeTcgdexClient:
+        def __init__(self, settings=None):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc_info):
+            return False
+
+    monkeypatch.setattr(sync_catalog_module, "sync_set", fake_sync_set)
+    monkeypatch.setattr(sync_catalog_module, "TcgdexClient", _FakeTcgdexClient)
+
+    results = await sync_catalog_module.sync_sets(
+        ["good-1", "bad-set", "good-2"], settings=settings
+    )
+
+    assert calls == ["good-1", "bad-set", "good-2"]
+    assert set(results.keys()) == {"good-1", "good-2"}

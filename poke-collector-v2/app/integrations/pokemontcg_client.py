@@ -1,8 +1,11 @@
 """Async client for the pokemontcg.io v2 API.
 
-Used by the catalog sync job (Fase 2) to enumerate sets/cards and download
-reference images for hashing. Key is optional — the free tier without a key
-just has a lower rate limit (see PROJECT_SPEC.md section 4).
+No longer the sync job's primary source (see app/integrations/tcgdex_client.py
+and app/jobs/sync_catalog.py) — pokemontcg.io's team moved to the commercial
+Scrydex product and the legacy free API has become unreliable in practice
+(observed live: repeated bare 500/502s independent of request shape or rate).
+Kept around as a working client in case it's useful again (e.g. as a
+secondary cross-check source), but unused by the sync job for now.
 """
 from __future__ import annotations
 
@@ -94,10 +97,16 @@ class PokemonTcgClient:
         page: int = 1,
         page_size: int = 250,
     ) -> list[dict[str, Any]]:
-        """Return cards for a set (or matching a Lucene-style `query`)."""
+        """Return cards for a set (or matching a Lucene-style `query`).
+
+        set_id is deliberately unquoted in the query: pokemontcg.io's search
+        backend returns a bare 500 for a quoted `set.id:"..."` filter
+        (confirmed live), and set IDs are plain slugs (e.g. "base1",
+        "swsh1") that never need quoting anyway.
+        """
         q_parts = []
         if set_id:
-            q_parts.append(f'set.id:"{set_id}"')
+            q_parts.append(f"set.id:{set_id}")
         if query:
             q_parts.append(query)
         params: dict[str, Any] = {"page": page, "pageSize": page_size}
