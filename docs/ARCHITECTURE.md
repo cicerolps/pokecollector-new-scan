@@ -132,7 +132,7 @@ Regras atuais notáveis do modelo:
 - Itens de wishlist armazenam quantidade solicitada de `1` a `99`
 - `User.must_change_password` conduz o fluxo de troca de senha obrigatória
 - `UserSetting` armazena preferências e segredos por usuário
-- `CardHash` é populado por `backend/scripts/backfill_card_hashes.py` e consultado pelo scanner a cada tentativa de reconhecimento
+- `CardHash` é populado automaticamente em segundo plano por `services/card_hash_backfill.py` (agendado em `services/scheduler.py`) e consultado pelo scanner a cada tentativa de reconhecimento; `backend/scripts/backfill_card_hashes.py` continua disponível para rodar manualmente ou forçar um recálculo completo
 
 ## Arquitetura de Configurações
 
@@ -153,6 +153,7 @@ A divisão é definida em `backend/api/settings.py`:
 - `ADMIN_ONLY_KEYS`
   - intervalo de sincronização completa
   - intervalo de sincronização de preço
+  - intervalo de backfill de hash das cartas
   - modo multiusuário
   - idiomas de sincronização da TCGdex
 
@@ -235,7 +236,8 @@ Camadas de estado atuais do frontend:
 
 - Implementado em `backend/services/card_scan_preprocess.py`, `card_scan_hash.py`, `card_scan_ocr.py` e `card_scan_resolver.py`
 - Não depende de nenhuma API externa, chave, ou conexão de rede — todo o processamento acontece no próprio backend
-- O banco de hashes (`card_hashes`) precisa ser populado com `backend/scripts/backfill_card_hashes.py` depois de cada sincronização de catálogo que adicione cartas novas
+- O banco de hashes (`card_hashes`) é mantido em dia automaticamente: `services/scheduler.py` roda um backfill incremental em lotes limitados a cada `N` minutos (configurável em Configurações, `card_hash_backfill_interval_minutes`; tamanho do lote via `CARD_HASH_BACKFILL_BATCH_LIMIT`), então cartas novas de uma sincronização acabam com hash sem intervenção manual
+- `POST /api/card-hashes/backfill` (admin) permite forçar uma execução incremental ou, com `force=true`, recalcular o hash de todas as cartas do zero; `GET /api/card-hashes/status` expõe a cobertura atual (total/hasheadas/faltando) e se uma execução está em andamento
 - EasyOCR baixa os pesos do modelo apenas durante o build da imagem Docker (`EASYOCR_MODEL_DIR`), não em tempo de execução
 
 ### Telegram

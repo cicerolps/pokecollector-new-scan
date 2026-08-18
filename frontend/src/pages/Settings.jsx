@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Crown, RefreshCw, Download, Upload, Plus, Pencil, Trash2, User, UserCheck, UserX, Zap, Copy } from 'lucide-react'
 import {
   getSyncStatus, triggerSync, triggerAllPriceSync, rescheduleFullSync, reschedulePriceSync,
+  getCardHashBackfillStatus, triggerCardHashBackfill, rescheduleCardHashBackfill,
   downloadBackup, restoreBackup, exportCSV,
   getSetting, setSetting, getTelegramStatus, saveSettings, setAuthMode,
   getUsers, createUser, updateUser, deleteUser, changePassword, changeAvatar, changeUsername,
@@ -401,6 +402,7 @@ export default function Settings() {
   // Recurring automatic full sync interval (days) and small price sync interval (minutes).
   const [fullSyncIntervalDays, setFullSyncIntervalDays] = useState('5')
   const [priceSyncIntervalMinutes, setPriceSyncIntervalMinutes] = useState('30')
+  const [cardHashBackfillIntervalMinutes, setCardHashBackfillIntervalMinutes] = useState('15')
 
   // Notification settings
   const [priceAlertsEnabled, setPriceAlertsEnabled] = useState(false)
@@ -437,6 +439,11 @@ export default function Settings() {
   const { data: priceSyncIntervalData } = useQuery({
     queryKey: ['setting', 'price_sync_interval_minutes'],
     queryFn: () => getSetting('price_sync_interval_minutes').catch(() => ({ value: '30' })),
+  })
+
+  const { data: cardHashBackfillIntervalData } = useQuery({
+    queryKey: ['setting', 'card_hash_backfill_interval_minutes'],
+    queryFn: () => getSetting('card_hash_backfill_interval_minutes').catch(() => ({ value: '15' })),
   })
 
   const { data: priceAlertsData } = useQuery({
@@ -495,6 +502,13 @@ export default function Settings() {
     refetchInterval: 10000,
   })
 
+  const { data: cardHashBackfillStatus } = useQuery({
+    queryKey: ['card-hash-backfill-status'],
+    queryFn: () => getCardHashBackfillStatus().then((r) => r.data),
+    enabled: user?.role === 'admin',
+    refetchInterval: 10000,
+  })
+
   const { data: customMatches = [] } = useQuery({
     queryKey: ['custom-matches'],
     queryFn: () => getCustomMatches().then((r) => r.data),
@@ -509,6 +523,10 @@ export default function Settings() {
   useEffect(() => {
     if (priceSyncIntervalData?.value) setPriceSyncIntervalMinutes(priceSyncIntervalData.value)
   }, [priceSyncIntervalData])
+
+  useEffect(() => {
+    if (cardHashBackfillIntervalData?.value) setCardHashBackfillIntervalMinutes(cardHashBackfillIntervalData.value)
+  }, [cardHashBackfillIntervalData])
 
   useEffect(() => {
     if (priceAlertsData?.value) setPriceAlertsEnabled(priceAlertsData.value === 'true')
@@ -550,6 +568,37 @@ export default function Settings() {
     },
     onError: () => toast.error(t('settings.syncFailed')),
   })
+
+  // Card-hash backfill mutations (scanner hash bank). Incremental only
+  // hashes cards missing one; force recomputes every hashable card.
+  const cardHashBackfillMutation = useMutation({
+    mutationFn: (force) => triggerCardHashBackfill(force),
+    onSuccess: () => {
+      toast.success(t('settings.cardHashBackfillStarted'))
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['card-hash-backfill-status'] }), 5000)
+    },
+    onError: () => toast.error(t('settings.syncFailed')),
+  })
+
+  const runIncrementalHashBackfill = () => cardHashBackfillMutation.mutate(false)
+
+  const runForcedHashBackfill = async () => {
+    const firstConfirmed = await confirmDialog({
+      title: t('settings.cardHashForceConfirmTitle'),
+      message: t('settings.cardHashForceConfirmMessage1'),
+      confirmLabel: t('common.continue'),
+      destructive: true,
+    })
+    if (!firstConfirmed) return
+    const secondConfirmed = await confirmDialog({
+      title: t('settings.cardHashForceConfirmTitle'),
+      message: t('settings.cardHashForceConfirmMessage2'),
+      confirmLabel: t('settings.cardHashForceConfirmAction'),
+      destructive: true,
+    })
+    if (!secondConfirmed) return
+    cardHashBackfillMutation.mutate(true)
+  }
 
   const avatarMutation = useMutation({
     mutationFn: (avatarId) => changeAvatar(avatarId),
@@ -635,6 +684,12 @@ export default function Settings() {
     setFullSyncIntervalDays(val)
     await saveSetting('full_sync_interval_days', val)
     try { await rescheduleFullSync(parseInt(val)) } catch {}
+  }
+
+  const handleCardHashBackfillIntervalChange = async (val) => {
+    setCardHashBackfillIntervalMinutes(val)
+    await saveSetting('card_hash_backfill_interval_minutes', val)
+    try { await rescheduleCardHashBackfill(parseInt(val)) } catch {}
   }
 
   const handlePriceAlertsToggle = async (val) => {
@@ -1382,6 +1437,57 @@ export default function Settings() {
                 </SettingsRow>
               )}
             </SettingsCard>
+
+            {/* Card 3: Card Hash Backfill (scanner hash bank) — admin only */}
+            {user?.role === 'admin' && (
+              <SettingsCard>
+                <SettingsRow
+                  label={t('settings.cardHashBackfill')}
+                  description={
+                    cardHashBackfillStatus
+                      ? t('settings.cardHashBackfillDesc')
+                          .replace('{hashed}', cardHashBackfillStatus.hashed)
+                          .replace('{total}', cardHashBackfillStatus.total_hashable)
+                          .replace('{missing}', cardHashBackfillStatus.missing)
+                      : t('settings.cardHashBackfillDescLoading')
+                  }
+                >
+                  <button
+                    onClick={runIncrementalHashBackfill}
+                    disabled={cardHashBackfillMutation.isPending || cardHashBackfillStatus?.is_running}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity disabled:opacity-50"
+                    style={{ background: 'rgba(227,0,11,0.15)', color: '#e3000b', border: '1px solid rgba(227,0,11,0.3)' }}
+                  >
+                    <RefreshCw size={13} className={cardHashBackfillStatus?.is_running ? 'animate-spin' : ''} />
+                    {cardHashBackfillStatus?.is_running ? t('settings.running') : t('settings.cardHashBackfillButton')}
+                  </button>
+                </SettingsRow>
+                <SettingsRow label={t('settings.cardHashForce')} description={t('settings.cardHashForceDesc')}>
+                  <button
+                    onClick={runForcedHashBackfill}
+                    disabled={cardHashBackfillMutation.isPending || cardHashBackfillStatus?.is_running}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity disabled:opacity-50"
+                    style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.35)' }}
+                  >
+                    <RefreshCw size={13} className={cardHashBackfillStatus?.is_running ? 'animate-spin' : ''} />
+                    {t('settings.cardHashForceButton')}
+                  </button>
+                </SettingsRow>
+                <SettingsRow label={t('settings.interval')} description={t('settings.cardHashBackfillIntervalDesc')} last>
+                  <SelectControl
+                    value={cardHashBackfillIntervalMinutes}
+                    options={[
+                      { value: '5',  label: t('settings.min5') },
+                      { value: '10', label: t('settings.min10') },
+                      { value: '15', label: t('settings.min15') },
+                      { value: '30', label: t('settings.min30') },
+                      { value: '60', label: t('settings.min60') },
+                    ]}
+                    onChange={handleCardHashBackfillIntervalChange}
+                  />
+                </SettingsRow>
+              </SettingsCard>
+            )}
           </section>
 
           {/* ── 5. DATEN ── */}
