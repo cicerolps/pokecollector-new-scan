@@ -1195,6 +1195,8 @@ const en = {
     useSelectedMatch: 'Use selected match',
     noMatches: 'No matches found',
     noMatchTip: 'Tip: Better lighting and a sharp photo helps',
+    hashCoverageTitle: 'Recognition database {percent}% ready',
+    hashCoverageDesc: '{missing} of {total} cards are still being indexed in the background. If a very recently added card doesn\'t match yet, it should shortly.',
     scanAgain: 'Scan again',
     purchasePriceLabel: 'Purchase price (optional)',
     addToCollection: 'Add to collection',

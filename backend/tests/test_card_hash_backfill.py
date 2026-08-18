@@ -232,10 +232,13 @@ class CardHashesApiTests(unittest.TestCase):
         card_hash_backfill._running = False
         card_hash_backfill._last_result = None
 
-    def test_status_is_admin_only(self):
+    def test_status_is_visible_to_any_authenticated_user(self):
         self.current_user = self.trainer
-        response = self.client.get("/api/card-hashes/status")
-        self.assertEqual(response.status_code, 403)
+        with patch("api.card_hashes.hash_coverage_counts", return_value={
+            "total_hashable": 0, "hashed": 0, "missing": 0,
+        }):
+            response = self.client.get("/api/card-hashes/status")
+        self.assertEqual(response.status_code, 200)
 
     def test_status_reports_coverage_and_running_state(self):
         with patch("api.card_hashes.hash_coverage_counts", return_value={
