@@ -1,37 +1,37 @@
-# Reverse proxy authentication
+# Autenticação via proxy reverso
 
-PokéCollector can run behind Authentik, Authelia, oauth2-proxy, or another authentication layer at the reverse proxy.
+O PokéCollector pode rodar atrás do Authentik, Authelia, oauth2-proxy, ou outra camada de autenticação no proxy reverso.
 
-The proxy sees every request before PokéCollector does. This means the public-profile settings inside PokéCollector cannot make a route public if the proxy still requires a login for that route.
+O proxy vê toda requisição antes do PokéCollector. Isso significa que as configurações de perfil público dentro do PokéCollector não conseguem tornar uma rota pública se o proxy ainda exigir login para essa rota.
 
-## Public profile route contract
+## Contrato de rotas do perfil público
 
-Allow unauthenticated access to these paths when public profiles should be reachable outside the proxy login:
+Permita acesso não autenticado a estes caminhos quando os perfis públicos precisarem ser alcançáveis fora do login do proxy:
 
-| Path | Purpose |
+| Caminho | Finalidade |
 | --- | --- |
-| `/u` and `/u/*` | Public trainer directory, profiles, and binders |
-| `/api/public/*` | Anonymous public-profile and binder data |
-| `/api/images/card/*` | Card artwork used by public binders |
-| `/api/pokedex/images/sprites/*` | Trainer avatars used by public pages |
-| `/assets/*` | Compiled JavaScript, CSS, and lazy-loaded page bundles |
-| `/pokeball.svg` and `/cardback.jpg` | Public-page and missing-card artwork |
-| `/favicon.ico`, `/favicon-48.png`, `/apple-touch-icon.png`, `/manifest.json`, `/icon-192.png`, `/icon-512.png`, and `/robots.txt` | Browser, PWA, and crawler assets |
+| `/u` e `/u/*` | Diretório público de treinadores, perfis e binders |
+| `/api/public/*` | Dados anônimos de perfil público e binder |
+| `/api/images/card/*` | Arte de carta usada por binders públicos |
+| `/api/pokedex/images/sprites/*` | Avatares de treinador usados por páginas públicas |
+| `/assets/*` | JavaScript, CSS compilados e pacotes de página carregados sob demanda |
+| `/pokeball.svg` e `/cardback.jpg` | Arte de página pública e de carta ausente |
+| `/favicon.ico`, `/favicon-48.png`, `/apple-touch-icon.png`, `/manifest.json`, `/icon-192.png`, `/icon-512.png`, e `/robots.txt` | Assets de navegador, PWA e crawler |
 
-Keep every other application route behind the proxy. In particular, do not allow all of `/api/*`. Authenticated collection, settings, sync, backup, and administration endpoints are under that prefix.
+Mantenha toda outra rota da aplicação atrás do proxy. Em particular, não libere todo o `/api/*`. Os endpoints autenticados de coleção, configurações, sincronização, backup e administração ficam sob esse prefixo.
 
-PokéCollector still applies its own sharing controls after a request reaches the app:
+O PokéCollector ainda aplica seus próprios controles de compartilhamento depois que uma requisição chega ao app:
 
-1. An administrator must enable public profiles.
-2. The trainer must publish their profile.
-3. Each collection binder must be shared separately.
-4. Collection values remain hidden unless the trainer enables them.
+1. Um administrador precisa habilitar perfis públicos.
+2. O treinador precisa publicar o próprio perfil.
+3. Cada binder de coleção precisa ser compartilhado separadamente.
+4. Os valores da coleção permanecem ocultos, a menos que o treinador os habilite.
 
 ## Authentik
 
-Authentik proxy providers support an **Unauthenticated Paths** or **Unauthenticated URLs** field. Each line is a Go regular expression.
+Os provedores de proxy do Authentik suportam um campo **Unauthenticated Paths** ou **Unauthenticated URLs**. Cada linha é uma expressão regular Go.
 
-For proxy mode or forward auth for a single application, Authentik matches the request path. Add:
+Para o modo proxy, ou forward auth de uma única aplicação, o Authentik casa com o caminho da requisição. Adicione:
 
 ```text
 ^/u(/.*)?$
@@ -42,7 +42,7 @@ For proxy mode or forward auth for a single application, Authentik matches the r
 ^/(pokeball\.svg|cardback\.jpg|favicon\.ico|favicon-48\.png|apple-touch-icon\.png|manifest\.json|icon-192\.png|icon-512\.png|robots\.txt)$
 ```
 
-For domain-level forward auth, Authentik matches the complete URL instead. Replace `cards.example.com` with the PokéCollector host:
+Para forward auth em nível de domínio, o Authentik casa com a URL completa em vez disso. Substitua `cards.example.com` pelo host do PokéCollector:
 
 ```text
 ^https://cards\.example\.com/u(/.*)?(\?.*)?$
@@ -53,18 +53,18 @@ For domain-level forward auth, Authentik matches the complete URL instead. Repla
 ^https://cards\.example\.com/(pokeball\.svg|cardback\.jpg|favicon\.ico|favicon-48\.png|apple-touch-icon\.png|manifest\.json|icon-192\.png|icon-512\.png|robots\.txt)(\?.*)?$
 ```
 
-If the installation uses HTTP or a non-standard port internally, match the URL that Authentik receives. Authentik documents the difference between provider modes in its [proxy provider documentation](https://docs.goauthentik.io/add-secure-apps/providers/proxy/#allowing-unauthenticated-requests).
+Se a instalação usa HTTP ou uma porta não padrão internamente, case com a URL que o Authentik recebe. O Authentik documenta a diferença entre os modos de provedor na [documentação do proxy provider](https://docs.goauthentik.io/add-secure-apps/providers/proxy/#allowing-unauthenticated-requests).
 
-These exceptions expose the files and endpoints needed to render anonymous public views. Compiled frontend assets and globally visible card artwork are available through the listed routes, but protected collection data and administration APIs remain behind authentication. They do not make PokéCollector use the identity supplied by Authentik. Native OIDC support would be a separate authentication integration.
+Essas exceções expõem os arquivos e endpoints necessários para renderizar visões públicas anônimas. Os assets compilados do frontend e a arte de carta globalmente visível ficam disponíveis pelas rotas listadas, mas os dados protegidos de coleção e as APIs de administração permanecem atrás de autenticação. Elas não fazem o PokéCollector usar a identidade fornecida pelo Authentik. Suporte nativo a OIDC seria uma integração de autenticação separada.
 
-## Verification
+## Verificação
 
-Test from a private browser window without an Authentik session:
+Teste a partir de uma janela anônima do navegador, sem sessão no Authentik:
 
-1. Open `/u`.
-2. Open a trainer profile and one shared binder.
-3. Confirm trainer sprites and card images load.
-4. Confirm `/settings` still requires the proxy login.
-5. Confirm a protected API route such as `/api/collection/` still requires the proxy login.
+1. Abra `/u`.
+2. Abra um perfil de treinador e um binder compartilhado.
+3. Confirme que os sprites do treinador e as imagens de carta carregam.
+4. Confirme que `/settings` ainda exige o login do proxy.
+5. Confirme que uma rota de API protegida, como `/api/collection/`, ainda exige o login do proxy.
 
-If the public page HTML loads but remains blank, inspect the browser network panel. A redirect or HTML login response for `/assets/*` usually means the frontend bundles are still protected. Missing card images usually mean `/api/images/card/*` or `/cardback.jpg` is still protected.
+Se o HTML da página pública carregar mas continuar em branco, inspecione o painel de rede do navegador. Um redirecionamento ou resposta HTML de login para `/assets/*` geralmente significa que os pacotes do frontend ainda estão protegidos. Imagens de carta ausentes geralmente significam que `/api/images/card/*` ou `/cardback.jpg` ainda estão protegidos.

@@ -1,188 +1,195 @@
-# Backend Reference
+# Referência do Backend
 
-FastAPI app entry point: `backend/main.py`.
+Ponto de entrada do app FastAPI: `backend/main.py`.
 
-## API Routes
+## Rotas da API
 
-### Auth
+### Autenticação
 
-| Method | Path | Notes |
+| Método | Rota | Notas |
 |--------|------|-------|
-| POST | `/api/auth/login` | Username/password login |
-| GET | `/api/auth/me` | Current authenticated user |
-| GET | `/api/auth/mode` | Returns `{ multi_user: boolean }` |
-| PUT | `/api/auth/mode` | Admin-only toggle for single-user vs multi-user mode |
-| GET | `/api/auth/users` | Admin-only user list |
-| POST | `/api/auth/users` | Admin-only user creation |
-| PUT | `/api/auth/users/{user_id}` | Admin-only user update |
-| DELETE | `/api/auth/users/{user_id}` | Admin-only user delete; cascades owned data cleanup |
-| PUT | `/api/auth/me/password` | Change password with current password |
-| PUT | `/api/auth/me/force-password` | Complete required first-login password change |
-| PUT | `/api/auth/me/avatar` | Update current user's avatar |
-| PUT | `/api/auth/me/username` | Update current user's profile name |
+| POST | `/api/auth/login` | Login por usuário/senha |
+| GET | `/api/auth/me` | Usuário atualmente autenticado |
+| GET | `/api/auth/mode` | Retorna `{ multi_user: boolean }` |
+| PUT | `/api/auth/mode` | Interruptor restrito ao admin entre modo usuário único e multiusuário |
+| GET | `/api/auth/users` | Lista de usuários, restrita ao admin |
+| POST | `/api/auth/users` | Criação de usuário, restrita ao admin |
+| PUT | `/api/auth/users/{user_id}` | Atualização de usuário, restrita ao admin |
+| DELETE | `/api/auth/users/{user_id}` | Exclusão de usuário, restrita ao admin; propaga a limpeza dos dados de propriedade dele |
+| PUT | `/api/auth/me/password` | Trocar senha com a senha atual |
+| PUT | `/api/auth/me/force-password` | Completa a troca de senha obrigatória no primeiro login |
+| PUT | `/api/auth/me/avatar` | Atualiza o avatar do usuário atual |
+| PUT | `/api/auth/me/username` | Atualiza o nome de perfil do usuário atual |
 
-### Cards
+### Cartas
 
-| Method | Path | Notes |
+| Método | Rota | Notas |
 |--------|------|-------|
-| GET | `/api/cards/search` | Local card search |
-| GET | `/api/cards/custom` | List the current user's custom cards and shared templates |
-| POST | `/api/cards/custom` | Create an owner-scoped custom card |
-| POST | `/api/cards/custom/{card_id}/clone` | Copy a shared template into an independent private card |
-| PUT | `/api/cards/custom/{card_id}` | Owner-only custom-card update |
-| DELETE | `/api/cards/custom/{card_id}` | Owner-only custom-card delete |
-| GET | `/api/cards/custom/matches` | Pending custom-card migration matches |
-| POST | `/api/cards/custom/migrate/{match_id}` | Migrate custom card to API card |
-| POST | `/api/cards/custom/dismiss/{match_id}` | Dismiss match |
-| GET | `/api/cards/{card_id}/lang/{lang}` | Resolve equivalent card in another language |
-| GET | `/api/cards/{card_id}/price-history` | Price history |
-| PUT | `/api/cards/{card_id}/custom-image` | Set temporary custom image URL |
-| GET | `/api/cards/{card_id}` | Card detail |
-| POST | `/api/cards/recognize` | Gemini-powered card recognition |
-| POST | `/api/cards/recognize/jobs` | Sanitize and enqueue up to 50 persistent scan photos |
-| GET | `/api/cards/recognize/jobs` | Current user's active/actionable scan jobs |
-| GET | `/api/cards/recognize/jobs/{job_id}` | User-scoped scan job and review items |
-| GET | `/api/cards/recognize/jobs/{job_id}/items/{item_id}/image` | Private sanitized review photo |
-| POST | `/api/cards/recognize/jobs/{job_id}/items/{item_id}/resolve` | Confirm/dismiss an item and delete its queued photo |
-| POST | `/api/cards/recognize/jobs/{job_id}/items/{item_id}/retry` | Retry one reviewable item individually |
-| DELETE | `/api/cards/recognize/jobs/{job_id}` | Delete a job and its queued photos |
+| GET | `/api/cards/search` | Busca local de cartas |
+| GET | `/api/cards/custom` | Lista as cartas personalizadas e templates compartilhados do usuário atual |
+| POST | `/api/cards/custom` | Cria uma carta personalizada restrita ao dono |
+| POST | `/api/cards/custom/{card_id}/clone` | Copia um template compartilhado em uma carta privada independente |
+| PUT | `/api/cards/custom/{card_id}` | Atualização de carta personalizada, restrita ao dono |
+| DELETE | `/api/cards/custom/{card_id}` | Exclusão de carta personalizada, restrita ao dono |
+| GET | `/api/cards/custom/matches` | Correspondências pendentes de migração de carta personalizada |
+| POST | `/api/cards/custom/migrate/{match_id}` | Migra carta personalizada para carta da API |
+| POST | `/api/cards/custom/dismiss/{match_id}` | Descarta a correspondência |
+| GET | `/api/cards/{card_id}/lang/{lang}` | Resolve a carta equivalente em outro idioma |
+| GET | `/api/cards/{card_id}/price-history` | Histórico de preço |
+| PUT | `/api/cards/{card_id}/custom-image` | Define uma URL de imagem personalizada temporária |
+| GET | `/api/cards/{card_id}` | Detalhe da carta |
+| POST | `/api/cards/recognize` | Reconhecimento local de carta (hash perceptual + OCR), sem API externa |
+| POST | `/api/cards/recognize/jobs` | Sanitiza e enfileira até 50 fotos de escaneamento persistente |
+| GET | `/api/cards/recognize/jobs` | Jobs de escaneamento ativos/acionáveis do usuário atual |
+| GET | `/api/cards/recognize/jobs/{job_id}` | Job de escaneamento e itens de revisão, restritos ao usuário |
+| GET | `/api/cards/recognize/jobs/{job_id}/items/{item_id}/image` | Foto de revisão sanitizada e privada |
+| POST | `/api/cards/recognize/jobs/{job_id}/items/{item_id}/resolve` | Confirma/descarta um item e apaga sua foto na fila |
+| POST | `/api/cards/recognize/jobs/{job_id}/items/{item_id}/retry` | Tenta novamente um item revisável individualmente |
+| DELETE | `/api/cards/recognize/jobs/{job_id}` | Exclui um job e suas fotos na fila |
 
-Custom cards belong to exactly one user. Owners may publish a card as a shared template, but other users must clone it before using it in collections, wishlists, binders, products, or trades. Clones have independent IDs, metadata, images, and prices. Manual image URLs must use public HTTPS destinations and are fetched through the size-limited image proxy. During upgrade, existing custom cards become shared templates owned by the first-created admin account, while each other referencing user receives one private clone and keeps their existing references.
+Cartas personalizadas pertencem a exatamente um usuário. Donos podem publicar uma carta como template compartilhado, mas outros usuários precisam cloná-la antes de usá-la em coleções, wishlists, binders, produtos ou trocas. Clones têm IDs, metadados, imagens e preços independentes. URLs de imagem manual precisam usar destinos HTTPS públicos e são buscadas através do proxy de imagem com limite de tamanho. Durante o upgrade, cartas personalizadas existentes viram templates compartilhados de propriedade da primeira conta admin criada, enquanto cada outro usuário que as referenciava recebe um clone privado e mantém suas referências existentes.
 
-### Collection, Sets, Wishlist, Binders
+### Coleção, Sets, Wishlist, Binders
 
-| Method | Path | Notes |
+| Método | Rota | Notas |
 |--------|------|-------|
-| GET | `/api/collection/` | User-scoped collection |
-| GET | `/api/collection/user/{user_id}` | View another user's collection (read-only, auth required) |
-| POST | `/api/collection/` | Add to collection |
-| POST | `/api/collection/bulk-add` | Bulk-add selected cards; commits each item independently and reports added/updated/failed counts |
-| POST | `/api/collection/import-csv` | Strict CSV collection import with all-or-nothing validation |
-| PUT | `/api/collection/{item_id}` | Update collection item |
-| DELETE | `/api/collection/{item_id}` | Delete collection item |
-| GET | `/api/collection/stats/summary` | Collection summary |
-| GET | `/api/sets/` | List sets |
-| GET | `/api/sets/new` | Newly detected sets |
-| POST | `/api/sets/mark-seen` | Mark new-set badges seen |
-| GET | `/api/sets/{set_id}` | Set detail |
-| GET | `/api/sets/{set_id}/checklist` | Set checklist |
+| GET | `/api/collection/` | Coleção do usuário |
+| GET | `/api/collection/user/{user_id}` | Vê a coleção de outro usuário (somente leitura, requer autenticação) |
+| POST | `/api/collection/` | Adiciona à coleção |
+| POST | `/api/collection/bulk-add` | Adiciona cartas selecionadas em lote; cada item é commitado independentemente e reporta as contagens de adicionados/atualizados/falhos |
+| POST | `/api/collection/import-csv` | Importação estrita de coleção via CSV, com validação tudo-ou-nada |
+| PUT | `/api/collection/{item_id}` | Atualiza item da coleção |
+| DELETE | `/api/collection/{item_id}` | Exclui item da coleção |
+| GET | `/api/collection/stats/summary` | Resumo da coleção |
+| GET | `/api/sets/` | Lista sets |
+| GET | `/api/sets/new` | Sets recém-detectados |
+| POST | `/api/sets/mark-seen` | Marca os selos de sets novos como vistos |
+| GET | `/api/sets/{set_id}` | Detalhe do set |
+| GET | `/api/sets/{set_id}/checklist` | Checklist do set |
 | GET | `/api/wishlist/` | Wishlist |
-| POST | `/api/wishlist/` | Add wishlist item |
-| PUT | `/api/wishlist/{item_id}` | Update wishlist quantity and price alerts |
-| DELETE | `/api/wishlist/{item_id}` | Remove wishlist item |
+| POST | `/api/wishlist/` | Adiciona item à wishlist |
+| PUT | `/api/wishlist/{item_id}` | Atualiza quantidade e alertas de preço da wishlist |
+| DELETE | `/api/wishlist/{item_id}` | Remove item da wishlist |
 | GET | `/api/binders/` | Binders |
-| POST | `/api/binders/` | Create binder |
-| PUT | `/api/binders/{binder_id}` | Update binder |
-| DELETE | `/api/binders/{binder_id}` | Delete binder |
-| GET | `/api/binders/{binder_id}/cards` | Binder cards |
-| GET | `/api/binders/{binder_id}/optimize-prints` | Equivalent-print optimization preview |
-| POST | `/api/binders/{binder_id}/optimize-prints` | Apply equivalent-print optimization |
-| POST | `/api/binders/{binder_id}/cards` | Add card to binder |
-| POST | `/api/binders/{binder_id}/collection-items` | Add owned collection item to binder |
-| PUT | `/api/binders/{binder_id}/entries/{binder_card_id}` | Update binder entry quantity |
-| GET | `/api/binders/{binder_id}/entries/{binder_card_id}/equivalent-prints` | List equivalent prints for an entry |
-| PUT | `/api/binders/{binder_id}/entries/{binder_card_id}/card` | Switch an entry to an equivalent print |
-| POST | `/api/binders/{binder_id}/entries/{binder_card_id}/wishlist` | Move binder entry to wishlist |
-| POST | `/api/binders/{binder_id}/wishlist` | Add wishlist card to binder |
-| GET | `/api/binders/{binder_id}/export-csv` | Binder CSV export |
-| POST | `/api/binders/{binder_id}/import-csv` | Binder CSV import |
-| DELETE | `/api/binders/{binder_id}/entries/{binder_card_id}` | Remove binder entry |
-| DELETE | `/api/binders/{binder_id}/cards/{card_id}` | Remove card from binder |
+| POST | `/api/binders/` | Cria binder |
+| PUT | `/api/binders/{binder_id}` | Atualiza binder |
+| DELETE | `/api/binders/{binder_id}` | Exclui binder |
+| GET | `/api/binders/{binder_id}/cards` | Cartas do binder |
+| GET | `/api/binders/{binder_id}/optimize-prints` | Prévia da otimização de impressões equivalentes |
+| POST | `/api/binders/{binder_id}/optimize-prints` | Aplica a otimização de impressões equivalentes |
+| POST | `/api/binders/{binder_id}/cards` | Adiciona carta ao binder |
+| POST | `/api/binders/{binder_id}/collection-items` | Adiciona item de coleção já possuído ao binder |
+| PUT | `/api/binders/{binder_id}/entries/{binder_card_id}` | Atualiza a quantidade de uma entrada do binder |
+| GET | `/api/binders/{binder_id}/entries/{binder_card_id}/equivalent-prints` | Lista impressões equivalentes para uma entrada |
+| PUT | `/api/binders/{binder_id}/entries/{binder_card_id}/card` | Troca uma entrada para uma impressão equivalente |
+| POST | `/api/binders/{binder_id}/entries/{binder_card_id}/wishlist` | Move a entrada do binder para a wishlist |
+| POST | `/api/binders/{binder_id}/wishlist` | Adiciona carta da wishlist ao binder |
+| GET | `/api/binders/{binder_id}/export-csv` | Exportação CSV do binder |
+| POST | `/api/binders/{binder_id}/import-csv` | Importação CSV do binder |
+| DELETE | `/api/binders/{binder_id}/entries/{binder_card_id}` | Remove entrada do binder |
+| DELETE | `/api/binders/{binder_id}/cards/{card_id}` | Remove carta do binder |
 
-### Dashboard, Analytics, Social, Community
+### Dashboard, Análises, Social, Comunidade
 
-| Method | Path | Notes |
+| Método | Rota | Notas |
 |--------|------|-------|
-| GET | `/api/dashboard/` | Dashboard summary |
-| GET | `/api/analytics/duplicates` | Duplicate cards |
-| GET | `/api/analytics/top-movers` | Price movers |
-| GET | `/api/analytics/rarity-stats` | Rarity distribution |
-| GET | `/api/analytics/investment-tracker` | Portfolio history |
-| GET | `/api/analytics/new-sets` | Analytics new sets |
-| GET | `/api/social/leaderboard` | Multi-user leaderboard |
-| GET | `/api/social/compare/{user_id}` | Multi-user comparison |
-| GET | `/api/social/achievements/{user_id}` | Achievement progress |
-| GET | `/api/github/contributors` | Public GitHub contributors feed |
-| GET | `/api/community/supporters` | Fresh, strictly validated public supporter registry projection; returns `503` with `Cache-Control: no-store` on any upstream or validation failure |
-| GET | `/api/github/rescue-donations` | Rescue donation total from `RESCUE_DONATIONS.csv` |
+| GET | `/api/dashboard/` | Resumo do dashboard |
+| GET | `/api/analytics/duplicates` | Cartas duplicadas |
+| GET | `/api/analytics/top-movers` | Maiores variações de preço |
+| GET | `/api/analytics/rarity-stats` | Distribuição de raridade |
+| GET | `/api/analytics/investment-tracker` | Histórico de portfólio |
+| GET | `/api/analytics/new-sets` | Sets novos nas análises |
+| GET | `/api/social/leaderboard` | Leaderboard multiusuário |
+| GET | `/api/social/compare/{user_id}` | Comparação multiusuário |
+| GET | `/api/social/achievements/{user_id}` | Progresso de conquistas |
+| GET | `/api/github/contributors` | Feed público de contribuidores do GitHub |
+| GET | `/api/community/supporters` | Projeção atualizada e estritamente validada do registro público de apoiadores; retorna `503` com `Cache-Control: no-store` em qualquer falha de upstream ou de validação |
+| GET | `/api/github/rescue-donations` | Total de doações de resgate a partir de `RESCUE_DONATIONS.csv` |
 
-### Products, Export, Backup, Sync, Settings
+### Produtos, Exportação, Backup, Sincronização, Configurações
 
-| Method | Path | Notes |
+| Método | Rota | Notas |
 |--------|------|-------|
-| GET | `/api/products/types` | Product type suggestions |
-| GET | `/api/products/` | Product list |
-| POST | `/api/products/` | Create product |
-| PUT | `/api/products/{product_id}` | Update product |
-| DELETE | `/api/products/{product_id}` | Delete product |
-| GET | `/api/products/summary` | Product summary |
-| GET | `/api/products/{product_id}` | Product detail |
-| POST | `/api/products/{product_id}/cards` | Link collection cards to product |
-| DELETE | `/api/products/{product_id}/cards/{product_card_id}` | Unlink product card |
-| POST | `/api/products/{product_id}/cards/{product_card_id}/sell` | Record product-card sale |
-| POST | `/api/products/{product_id}/ledger` | Add product ledger entry |
-| GET | `/api/export/csv` | CSV export |
-| GET | `/api/export/pdf` | PDF export |
-| GET | `/api/backup/download` | Admin-only SQL backup |
-| POST | `/api/backup/restore` | Admin-only SQL restore |
-| POST | `/api/backup/clear-image-cache` | Admin-only image cache clear |
-| POST | `/api/sync/` | Admin-only full sync |
-| POST | `/api/sync/prices` | Admin-only small price sync |
-| POST | `/api/sync/prices/all` | Admin-only forced price sync for all tracked cards |
-| POST | `/api/sync/reschedule-full` | Reschedule full sync |
-| POST | `/api/sync/reschedule-prices` | Reschedule price sync |
-| GET | `/api/sync/status` | Sync status and history |
-| GET | `/api/images/card/{card_id}/{size}` | Card image proxy/cache |
-| GET | `/api/images/set/{set_id}/{image_type}` | Set logo/symbol proxy/cache |
-| GET | `/api/settings/` | Effective settings for current user |
-| GET | `/api/settings/tcgdex-languages` | Supported TCGdex language metadata |
-| PUT | `/api/settings/` | Update settings |
-| GET | `/api/settings/debug-log` | Admin-only debug log download |
-| DELETE | `/api/settings/scan-diagnostics` | Delete all persisted scanner diagnostics for the current user |
-| GET | `/api/settings/telegram_status` | Whether Telegram is configured for current user |
-| GET | `/api/settings/exchange-rate` | Exchange-rate lookup for display currency |
-| GET | `/api/settings/{key}` | Get one setting |
-| POST | `/api/settings/{key}` | Set one setting |
+| GET | `/api/products/types` | Sugestões de tipo de produto |
+| GET | `/api/products/` | Lista de produtos |
+| POST | `/api/products/` | Cria produto |
+| PUT | `/api/products/{product_id}` | Atualiza produto |
+| DELETE | `/api/products/{product_id}` | Exclui produto |
+| GET | `/api/products/summary` | Resumo de produtos |
+| GET | `/api/products/{product_id}` | Detalhe do produto |
+| POST | `/api/products/{product_id}/cards` | Vincula cartas da coleção ao produto |
+| DELETE | `/api/products/{product_id}/cards/{product_card_id}` | Desvincula carta do produto |
+| POST | `/api/products/{product_id}/cards/{product_card_id}/sell` | Registra venda de carta do produto |
+| POST | `/api/products/{product_id}/ledger` | Adiciona lançamento ao livro-razão do produto |
+| GET | `/api/export/csv` | Exportação CSV |
+| GET | `/api/export/pdf` | Exportação PDF |
+| GET | `/api/backup/download` | Backup SQL, restrito ao admin |
+| POST | `/api/backup/restore` | Restauração SQL, restrita ao admin |
+| POST | `/api/backup/clear-image-cache` | Limpeza do cache de imagens, restrita ao admin |
+| POST | `/api/sync/` | Sincronização completa, restrita ao admin |
+| POST | `/api/sync/prices` | Sincronização leve de preços, restrita ao admin |
+| POST | `/api/sync/prices/all` | Sincronização forçada de preços para todas as cartas rastreadas, restrita ao admin |
+| POST | `/api/sync/reschedule-full` | Reagenda a sincronização completa |
+| POST | `/api/sync/reschedule-prices` | Reagenda a sincronização de preços |
+| GET | `/api/sync/status` | Status e histórico de sincronização |
+| GET | `/api/images/card/{card_id}/{size}` | Proxy/cache de imagem de carta |
+| GET | `/api/images/set/{set_id}/{image_type}` | Proxy/cache de logo/símbolo de set |
+| GET | `/api/settings/` | Configurações efetivas do usuário atual |
+| GET | `/api/settings/tcgdex-languages` | Metadados de idiomas suportados pela TCGdex |
+| PUT | `/api/settings/` | Atualiza configurações |
+| GET | `/api/settings/debug-log` | Download do log de debug, restrito ao admin |
+| DELETE | `/api/settings/scan-diagnostics` | Exclui todo o diagnóstico de scanner persistido do usuário atual |
+| GET | `/api/settings/telegram_status` | Se o Telegram está configurado para o usuário atual |
+| GET | `/api/settings/exchange-rate` | Consulta de taxa de câmbio para a moeda de exibição |
+| GET | `/api/settings/{key}` | Obtém uma configuração |
+| POST | `/api/settings/{key}` | Define uma configuração |
 
-## Models
+## Modelos
 
 ### `Card`
 
-- Composite primary key: `{tcg_card_id}_{lang}`, for example `sv1-1_de`
-- `tcg_card_id` stores the original TCGdex card id
-- `set_id` stores the original TCGdex set id, not the composite set row id
-- `rarity` is read-only API data
-- Variant availability is represented by boolean flags:
+- Chave primária composta: `{tcg_card_id}_{lang}`, por exemplo `sv1-1_de`
+- `tcg_card_id` armazena o id original da carta na TCGdex
+- `set_id` armazena o id original do set na TCGdex, não o id composto da linha do set
+- `rarity` é dado da API, somente leitura
+- A disponibilidade de variante é representada por flags booleanas:
   - `variants_normal`
   - `variants_reverse`
   - `variants_holo`
   - `variants_first_edition`
 
+### `CardHash`
+
+- Chave estrangeira para `Card.id`
+- Armazena os três hashes perceptuais (`phash`, `dhash`, `whash`) calculados a partir da imagem oficial da carta
+- Populado por `backend/scripts/backfill_card_hashes.py`; precisa ser reexecutado depois de qualquer sincronização que adicione cartas novas
+- Consultado por `backend/services/card_scan_hash.py` a cada tentativa de escaneamento
+
 ### `CollectionItem`
 
-- Stores user-owned copies of cards
-- Active fields: `card_id`, `user_id`, `quantity`, `condition`, `variant`, `purchase_price`, `lang`
-- Variant values are now the physical print variants only: `Normal`, `Holo`, `Reverse Holo`, `First Edition`
-- The old grading UI is gone; the database migration history still contains a legacy `grade` column, but it is not part of the current ORM model or API schema
-- Existing rows are grouped by user, card, variant, language, condition, and purchase price when cards are added through the API
+- Armazena cópias de cartas de propriedade do usuário
+- Campos ativos: `card_id`, `user_id`, `quantity`, `condition`, `variant`, `purchase_price`, `lang`
+- Os valores de variante agora são apenas as variantes físicas de impressão: `Normal`, `Holo`, `Reverse Holo`, `First Edition`
+- A antiga UI de grading não existe mais; o histórico de migração do banco ainda contém uma coluna legada `grade`, mas ela não faz parte do modelo ORM ou do schema de API atuais
+- Linhas existentes são agrupadas por usuário, carta, variante, idioma, condição e preço de compra quando cartas são adicionadas pela API
 
 ### `User`
 
-- Fields include `role`, `avatar_id`, and `must_change_password`
-- `must_change_password` is returned by auth responses and enforced by the frontend after login
+- Campos incluem `role`, `avatar_id` e `must_change_password`
+- `must_change_password` é retornado pelas respostas de autenticação e aplicado pelo frontend após o login
 
 ### `Setting`
 
-- Global key/value table
-- Used for admin-only settings such as sync cadence and auth mode
+- Tabela global de chave/valor
+- Usada para configurações restritas ao admin, como cadência de sincronização e modo de autenticação
 
 ### `UserSetting`
 
-- Per-user key/value table
-- Used for isolated user preferences and secrets
-- Unique constraint: `user_id + key`
+- Tabela de chave/valor por usuário
+- Usada para preferências e segredos isolados do usuário
+- Restrição de unicidade: `user_id + key`
 
-### Other Core Models
+### Outros Modelos Principais
 
 - `Set`
 - `WishlistItem`
@@ -194,9 +201,9 @@ Custom cards belong to exactly one user. Owners may publish a card as a shared t
 - `ImageCache`
 - `CustomCardMatch`
 
-## Settings Scope
+## Escopo das Configurações
 
-Current settings are split in `backend/api/settings.py`:
+As configurações atuais são divididas em `backend/api/settings.py`:
 
 - `PER_USER_KEYS`
   - `language`
@@ -208,7 +215,6 @@ Current settings are split in `backend/api/settings.py`:
   - `telegram_enabled`
   - `price_alerts_enabled`
   - `price_alert_threshold`
-  - `gemini_api_key`
   - `scan_diagnostics_enabled`
   - `trainer_name`
 - `ADMIN_ONLY_KEYS`
@@ -220,34 +226,33 @@ Current settings are split in `backend/api/settings.py`:
   - `cross_language_price_fallback`
   - `cross_language_image_fallback`
 
-Important behavior:
+Comportamento importante:
 
-- Each user only reads and writes their own `UserSetting` rows
-- Admin-only settings are stored globally in `settings`
-- Recurring automatic syncs include a full sync cadence and a separate small price sync cadence
-- `tcgdex_sync_languages` is seeded from `TCGDEX_SYNC_LANGUAGES` only when the row does not exist yet; afterward the DB value is authoritative. Empty or invalid env values safely fall back to `en,de`. The env value `all` expands to every supported TCGdex language during first bootstrap.
-- Supported TCGdex sync language codes are centralized in `services/tcgdex_languages.py`. Optional extra languages are `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th`, and `zh-cn` in addition to the default `en,de`.
-- English is the preferred cross-language fallback source for missing data, images, and prices by exact TCGdex ID. The backend does not guess English replacements by card name for regional-only cards.
-- Admin users can receive initial fallback values from env vars for Telegram and Gemini
-- `recognize.py` intentionally reads Gemini only from the current user's `UserSetting`; there is no cross-user fallback
-- `scan_diagnostics_enabled` is off by default and is effective only when the server configures `SCAN_TRACE_DIR`
+- Cada usuário só lê e escreve suas próprias linhas de `UserSetting`
+- Configurações restritas ao admin são armazenadas globalmente em `settings`
+- Sincronizações automáticas recorrentes incluem uma cadência de sincronização completa e uma cadência separada de sincronização leve de preços
+- `tcgdex_sync_languages` é semeado a partir de `TCGDEX_SYNC_LANGUAGES` apenas quando a linha ainda não existe; depois disso, o valor no banco é o que vale. Valores de ambiente vazios ou inválidos caem com segurança para `en,de`. O valor `all` se expande para todos os idiomas suportados pela TCGdex durante o primeiro bootstrap.
+- Os códigos de idioma de sincronização suportados pela TCGdex são centralizados em `services/tcgdex_languages.py`. Idiomas extras opcionais são `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th` e `zh-cn`, além do padrão `en,de`.
+- O inglês é a fonte de fallback preferida entre idiomas para dados, imagens e preços ausentes pelo ID exato da TCGdex. O backend não adivinha substitutos em inglês pelo nome da carta para cartas exclusivas de uma região.
+- Usuários admin podem receber valores iniciais de fallback a partir de variáveis de ambiente para o Telegram
+- `scan_diagnostics_enabled` vem desligado por padrão e só tem efeito quando o servidor configura `SCAN_TRACE_DIR`
 
-## Sync & Backup Behavior
+## Comportamento de Sincronização & Backup
 
-### Sync
+### Sincronização
 
-- `/api/sync/`, `/api/sync/prices`, and `/api/sync/prices/all` enforce admin access
-- `/api/sync/` runs the full TCGdex set/card sync using the configured `tcgdex_sync_languages`
-- `/api/sync/prices` runs the small tracked-card price sync
-- `/api/sync/prices/all` force-refreshes prices for all tracked cards
-- Sync status returns current flags plus the last 10 sync log rows
-- Full sync and price sync can be rescheduled through dedicated endpoints
+- `/api/sync/`, `/api/sync/prices` e `/api/sync/prices/all` exigem acesso de admin
+- `/api/sync/` roda a sincronização completa de sets/cartas da TCGdex usando os `tcgdex_sync_languages` configurados
+- `/api/sync/prices` roda a sincronização leve de preços das cartas rastreadas
+- `/api/sync/prices/all` força a atualização de preços de todas as cartas rastreadas
+- O status de sincronização retorna as flags atuais mais as últimas 10 linhas do log de sincronização
+- A sincronização completa e a de preços podem ser reagendadas por endpoints dedicados
 
-### Selective Backup
+### Backup Seletivo
 
-`GET /api/backup/download` accepts `include` as a comma-separated query param.
+`GET /api/backup/download` aceita `include` como parâmetro de query separado por vírgulas.
 
-Supported groups:
+Grupos suportados:
 
 - `full`
 - `collection`
@@ -257,7 +262,7 @@ Supported groups:
 - `system`
 - `images`
 
-Current table mapping:
+Mapeamento atual de tabelas:
 
 - `collection`: `collection`, `wishlist`, `binders`, `binder_cards`
 - `users`: `users`, `user_settings`, `settings`
@@ -266,90 +271,81 @@ Current table mapping:
 - `system`: `sync_log`
 - `images`: `image_cache`
 
-If `include=full`, image cache is excluded unless `images` is also explicitly included.
+Se `include=full`, o cache de imagens é excluído, a menos que `images` também seja explicitamente incluído.
 
-### Automatic Pre-upgrade Backup
+### Backup Automático de Pré-Atualização
 
-The backend image installs PostgreSQL 18 client tools so `pg_dump` can back up the default PostgreSQL 18 service and newer external PostgreSQL 18 servers. PostgreSQL requires `pg_dump` to be at least as new as the server major version.
+A imagem do backend instala as ferramentas cliente do PostgreSQL 18, para que `pg_dump` possa fazer backup do serviço padrão PostgreSQL 18 e de servidores PostgreSQL 18 externos mais novos. O PostgreSQL exige que `pg_dump` seja pelo menos tão novo quanto a versão major do servidor.
 
-`backend/services/pre_upgrade_backup.py` runs before `init_db()` startup migrations.
+`backend/services/pre_upgrade_backup.py` roda antes das migrações de inicialização de `init_db()`.
 
-Behavior:
+Comportamento:
 
-- Reads the current app version from `VERSION` through `backend/main.py`.
-- Reads `settings.last_successful_app_version` from the existing database.
-- Skips fresh installs where the `settings` table does not exist yet.
-- Creates a full SQL dump in `/app/backups` when an existing install starts on a new version.
-- Uses filenames like `pre_upgrade_1.17.0_to_1.18.0_20260526_010500.sql`.
-- Records `last_successful_app_version` only after startup initialization succeeds.
-- Retains the newest `PRE_UPGRADE_BACKUP_KEEP` automatic backups, default `10`, minimum `1`.
-- Writes dumps to a temporary filename first, then atomically renames after a successful non-empty `pg_dump` so partial files are not treated as valid backups.
+- Lê a versão atual do app a partir de `VERSION` através de `backend/main.py`.
+- Lê `settings.last_successful_app_version` do banco existente.
+- Pula instalações novas, onde a tabela `settings` ainda não existe.
+- Cria um dump SQL completo em `/app/backups` quando uma instalação existente sobe em uma nova versão.
+- Usa nomes de arquivo como `pre_upgrade_1.17.0_to_1.18.0_20260526_010500.sql`.
+- Só registra `last_successful_app_version` depois que a inicialização é concluída com sucesso.
+- Mantém os `PRE_UPGRADE_BACKUP_KEEP` backups automáticos mais recentes, padrão `10`, mínimo `1`.
+- Grava os dumps primeiro em um nome de arquivo temporário, depois renomeia atomicamente após um `pg_dump` bem-sucedido e não-vazio, para que arquivos parciais não sejam tratados como backups válidos.
 
-Environment controls:
+Controles de ambiente:
 
-- `PRE_UPGRADE_BACKUP_ENABLED`, default `true`
-- `PRE_UPGRADE_BACKUP_REQUIRED`, default `true`; when true, startup fails before migrations if `pg_dump` fails
-- `PRE_UPGRADE_BACKUP_KEEP`, default `10`, minimum `1`
+- `PRE_UPGRADE_BACKUP_ENABLED`, padrão `true`
+- `PRE_UPGRADE_BACKUP_REQUIRED`, padrão `true`; quando verdadeiro, a inicialização falha antes das migrações se `pg_dump` falhar
+- `PRE_UPGRADE_BACKUP_KEEP`, padrão `10`, mínimo `1`
 
-## Scanner Notes
+## Notas do Scanner
 
-`backend/api/recognize.py`, `backend/api/scan_jobs.py`, and `backend/services/scan_queue.py` implement the persistent background queue used by the unified scanner. The direct single-card recognition endpoint remains available for API compatibility:
+`backend/api/recognize.py`, `backend/api/scan_jobs.py` e `backend/services/scan_queue.py` implementam a fila persistente em segundo plano usada pelo scanner unificado. O endpoint de reconhecimento direto de uma única carta continua disponível por compatibilidade de API.
 
-1. Uploads are bounded, sanitized, orientation-normalized JPEGs with metadata removed.
-2. Two-to-four batch-eligible photos share one indexed composite Gemini request. Any missing or uncertain position is retried from its original individual photo.
-3. Gemini extracts name, split local/total collector number, printed set code, regulation mark, type, HP, language, and artist; uncertain small text stays `null`.
-4. TCGdex candidates are ranked deterministically by local number, language, printed total, set code, regulation mark, artist, and HP. Missing evidence is neutral and contradictions are negative.
-5. If metadata is inconclusive, conservative pHash can accept a close, clearly separated visual winner without another Gemini call. It never overrides known contradictions.
-6. Individual scans may use Gemini visual comparison when pHash abstains; composite scans fall back to individual recognition instead.
-7. Queue results remain reviewable after restarts. Confirming/dismissing an item deletes its queued photo; unreviewed jobs expire after 14 days.
+O reconhecimento roda inteiramente no backend, sem chamada a nenhuma API externa:
 
-Gemini error handling:
+1. Os uploads são JPEGs limitados em tamanho, sanitizados, normalizados de orientação, com metadados removidos.
+2. `backend/services/card_scan_preprocess.py` localiza os quatro cantos da carta (rejeitando contornos sem formato de carta), aplica correção de perspectiva e normaliza a iluminação com CLAHE. Sem contorno confiável, a imagem inteira é usada como fallback.
+3. `backend/services/card_scan_hash.py` calcula phash/dhash/whash (via `imagehash`) para a imagem normalizada — testando as quatro rotações — e busca os candidatos mais próximos em `card_hashes` por distância de Hamming combinada.
+4. A confiança da correspondência é avaliada como `confident`, `ambiguous` ou `no_match`, com base na distância do melhor candidato e no gap para o segundo colocado (`SCAN_HASH_TOP_N`, `SCAN_HASH_CONFIDENCE_GAP`, `SCAN_HASH_NO_MATCH_DISTANCE`).
+5. Quando ambíguo, `backend/services/card_scan_ocr.py` recorta a região do número da carta e usa EasyOCR para ler o número local e o total impresso do set, desempatando entre os candidatos.
+6. Cada foto é processada individualmente — não há mais agrupamento composto de várias cartas por foto (removido junto com o Gemini; sem equivalente local ainda).
+7. Os resultados da fila continuam revisáveis após reinícios. Confirmar/descartar um item apaga sua foto na fila; jobs não revisados expiram após 14 dias.
 
-- Transient `502`, `503`, and `504` responses are retried with backoff
-- Machine-readable daily-quota `429` responses are separated from short-term limits
-- Provider `Retry-After` or `google.rpc.RetryInfo` delays are used exactly when supplied; missing daily delays fall back to one hour and later six-hour intervals
-- Quota state is shared by an API-key fingerprint, so concurrent requests using the same key observe one block while different keys stay independent
-- Quota retries do not consume the three recognition attempts
-- Invalid API keys get a dedicated user-facing message
-- The scanner model defaults to `gemini-flash-latest` and can be changed with `GEMINI_MODEL`
-- Retired or unavailable Gemini models return a clear model-unavailable message with the upstream Google detail
-- Temporary Gemini outages are returned clearly instead of leaking as generic backend `500` errors
-- Gemini requests send the API key via header instead of the request URL
+Tratamento de erro:
 
-Additional matching behavior:
+- Falhas transitórias de processamento (imagem corrompida, decodificação falha) são reportadas com uma mensagem clara para o usuário
+- Retentativas usam backoff genérico — não há mais lógica de cota, chave de API, ou limite de taxa de provedor externo, porque não existe mais provedor externo
+- Os nomes de sufixo de carta como `EX`, `GX`, `V`, `VMAX`, `VSTAR`, `TAG TEAM`, `BREAK` e `LV.X` são removidos antes da busca por número
+- A busca pode recorrer do idioma detectado da carta para o inglês
+- O payload de resultado inclui os metadados reconhecidos e as cartas candidatas
 
-- Name suffixes like `EX`, `GX`, `V`, `VMAX`, `VSTAR`, `TAG TEAM`, `BREAK`, and `LV.X` are stripped before search
-- Search may fall back from detected card language to English
-- Result payload includes recognized metadata and candidate matches
+### Diagnóstico do scanner
 
-### Scanner diagnostics
+`backend/services/scan_trace.py` fica desabilitado a menos que `SCAN_TRACE_DIR` aponte para um armazenamento que o backend possa criar e escrever. A disponibilidade sozinha não coleta dados: cada usuário precisa habilitar com `scan_diagnostics_enabled=true`, que vem desligado por padrão. `SCAN_TRACE_STORAGE_DIR` é o local estável de limpeza; o Docker Compose padrão o mantém em `/app/data/scan-traces` mesmo quando a nova coleta está desabilitada.
 
-`backend/services/scan_trace.py` is disabled unless `SCAN_TRACE_DIR` points to storage the backend can create and write. Availability alone does not collect data: each user must opt in with `scan_diagnostics_enabled=true`, which is off by default. `SCAN_TRACE_STORAGE_DIR` is the stable cleanup location; standard Docker Compose keeps it at `/app/data/scan-traces` even when new collection is disabled.
+Para tentativas com consentimento, um trace JSON por usuário e um JPEG sanitizado são armazenados. Os traces contêm a foto sanitizada, a decisão final do scanner (correspondência por hash, hash+OCR, ou sem correspondência) e o candidato selecionado, além de eventuais erros. Nenhuma chave de API é usada pelo scanner, e credenciais de autenticação nunca são registradas.
 
-For opted-in attempts, one user-scoped JSON trace and sanitized JPEG are stored. Traces contain the generic prompt, raw Gemini text response, parsed fields and usage, TCGdex searches, ranked candidates and rank keys, pHash distances, visual-verification response, final mechanism, and errors. They never contain the Gemini API key or authentication credentials.
+Quando um candidato enfileirado é confirmado, o id da carta na TCGdex rotula todas as tentativas armazenadas daquele item de job como verdade de referência (ground truth). `backend/scripts/analyse_scan_traces.py` reporta a acurácia top-1 e detalhes opcionais de campos nulos/falhas.
 
-When a queued candidate is confirmed, its TCGdex card id labels all stored attempts for that job item as ground truth. `backend/scripts/analyse_scan_traces.py` reports top-1 accuracy, retrieval/ranking misses, decision-mechanism performance, pHash outcomes, and optional field-null/failure details.
+Desligar o consentimento interrompe a captura futura e deixa os traces existentes inalterados. Não há limite automático de retenção. `DELETE /api/settings/scan-diagnostics` é a ação explícita de exclusão por usuário; excluir uma conta revoga escritas em andamento e também remove sua subárvore de traces. Diretórios de trace usam o modo `0700` e arquivos JSON/JPEG usam `0600`. Os diagnósticos não fazem parte dos backups SQL, porque são dados de análise do sistema de arquivos.
 
-Turning consent off stops future capture and leaves existing traces unchanged. There is no automatic retention limit. `DELETE /api/settings/scan-diagnostics` is the explicit per-user deletion action; deleting an account revokes in-flight writes and removes its trace subtree as well. Trace directories use mode `0700` and JSON/JPEG files use `0600`. Diagnostics are not included in SQL backups because they are filesystem analysis data.
+## Adição em Lote à Coleção
 
-## Bulk Collection Add
+`POST /api/collection/bulk-add` aceita `BulkCollectionAddRequest` com múltiplos itens `CollectionItemCreate` e retorna `BulkCollectionAddResponse`:
 
-`POST /api/collection/bulk-add` accepts `BulkCollectionAddRequest` with multiple `CollectionItemCreate` items and returns `BulkCollectionAddResponse`:
+- `added`: novas linhas de coleção criadas
+- `updated`: linhas existentes correspondentes cuja quantidade foi incrementada
+- `failed`: itens que não puderam ser adicionados
+- `errors`: detalhes de erro por carta
 
-- `added`: new collection rows created
-- `updated`: existing matching rows whose quantity was incremented
-- `failed`: items that could not be added
-- `errors`: per-card error details
+Cada item é commitado independentemente, então uma carta inválida ou indisponível não reverte o restante do lote. Linhas existentes são pareadas por carta, variante, idioma e usuário atual.
 
-Each item is committed independently, so one invalid or unavailable card does not roll back the rest of the batch. Existing rows are matched by card, variant, language, and current user.
+## Notificações
 
-## Notifications
+`backend/services/telegram.py` agora aceita `user_id` e lê as credenciais do Telegram primeiro das linhas de `UserSetting` daquele usuário.
 
-`backend/services/telegram.py` now accepts `user_id` and reads Telegram credentials from that user's `UserSetting` rows first.
+## Migrações
 
-## Migrations
-
-- Migrations are raw SQL statements in `backend/database.py`
-- They are idempotent and run on startup
-- Automatic pre-upgrade backups run before `init_db()` migrations on existing installs when the app version changes
-- Legacy migration comments still mention older columns like `grade` or removed integrations, but the current runtime model and routers do not include eBay functionality
+- Migrações são instruções SQL puras em `backend/database.py`
+- São idempotentes e rodam na inicialização
+- Backups automáticos de pré-atualização rodam antes das migrações de `init_db()` em instalações existentes quando a versão do app muda
+- Comentários de migração legados ainda mencionam colunas antigas como `grade` ou integrações removidas, mas o modelo e os roteadores de runtime atuais não incluem funcionalidade de eBay

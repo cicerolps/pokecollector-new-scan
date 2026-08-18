@@ -1,42 +1,42 @@
-# Implementation brief: National Pokédex for PokéCollector
+# Briefing de implementação: Pokédex Nacional para o PokéCollector
 
-## Goal
+## Objetivo
 
-Add an additive species-first view covering National Dex #001–1025 while retaining all existing set, card, collection, binder, and wishlist workflows.
+Adicionar uma visão aditiva, organizada primeiro por espécie, cobrindo a Pokédex Nacional #001–1025, mantendo todos os fluxos existentes de set, carta, coleção, binder e wishlist.
 
-## Required user journey
+## Jornada de usuário necessária
 
 ```text
-Pokédex → filter/search → open a missing species → browse matching card printings
-→ open an exact Cardmarket product or fallback search → acquire/add the card
-→ species becomes Owned automatically
+Pokédex → filtro/busca → abre uma espécie faltando → navega pelas impressões de carta correspondentes
+→ abre um produto exato do Cardmarket ou busca alternativa → adquire/adiciona a carta
+→ a espécie vira Possuída automaticamente
 ```
 
-## Functional requirements
+## Requisitos funcionais
 
-- First-class `/pokedex` navigation and `/pokedex/{dex_id}` species routes.
-- Visual compact tile grid inspired behaviorally by a traditional Pokédex: pixel sprite, number, names, completion status, owned quantity, and available-printing count.
-- National view grouped by Kanto through Paldea, with National and Gen 1–9 pills.
-- Search by English/German name and padded/unpadded National Dex number.
-- All/Owned/Missing filters and scope-level progress.
-- Species page with official artwork, sprite fallback, previous/next navigation, and the existing card grid filtered by `dex_id`.
-- Ownership derived only from existing collection items.
-- Store TCGdex `dexId` as an array and Cardmarket products as a variant-aware list.
-- Full-card enrichment and an idempotent backfill; no live TCGdex join during page rendering.
-- Persistent local image cache with eager CLI population and lazy fill.
-- Exact Cardmarket product links per printing/variant, with a safe search fallback.
-- Existing set-driven behavior must remain unchanged.
+- Navegação de primeira classe `/pokedex` e rotas de espécie `/pokedex/{dex_id}`.
+- Grade visual compacta de blocos, inspirada no comportamento de uma Pokédex tradicional: sprite em pixel art, número, nomes, status de conclusão, quantidade possuída e contagem de impressões disponíveis.
+- Visão nacional agrupada de Kanto a Paldea, com pílulas de Nacional e Ger. 1–9.
+- Busca por nome em inglês/alemão e número da Pokédex Nacional, com ou sem zeros à esquerda.
+- Filtros Todos/Possuídos/Faltando e progresso no nível do escopo.
+- Página de espécie com arte oficial, sprite como fallback, navegação anterior/próximo, e a grade de cartas existente filtrada por `dex_id`.
+- Propriedade derivada apenas dos itens de coleção existentes.
+- Armazenar o `dexId` da TCGdex como um array, e os produtos do Cardmarket como uma lista sensível a variante.
+- Enriquecimento completo de carta e um backfill idempotente; sem join ao vivo com a TCGdex durante a renderização da página.
+- Cache local persistente de imagens, com população antecipada via CLI e preenchimento preguiçoso (lazy).
+- Links exatos de produto do Cardmarket por impressão/variante, com uma busca alternativa segura.
+- O comportamento existente orientado por set precisa permanecer inalterado.
 
-## Scope boundaries
+## Limites de escopo
 
-Not included in this feature:
+Não incluído nesta funcionalidade:
 
-- manually selected representative/binder-slot cards;
-- separate curated-Pokédex completion records;
-- Cardmarket authentication or API synchronization;
-- automatic wants-list/cart/Shopping Wizard operations;
-- replacement of existing set completion logic.
+- cartas representativas/de slot de binder selecionadas manualmente;
+- registros de conclusão separados para uma Pokédex com curadoria;
+- autenticação ou sincronização via API do Cardmarket;
+- operações automáticas de lista de desejos/carrinho/Shopping Wizard;
+- substituição da lógica existente de conclusão por set.
 
-## Follow-up
+## Continuação
 
-Add a wishlist-to-Cardmarket transfer assistant after this feature. The first version should provide exact-product links/checklist and an optional Cardmarket decklist-text export with clear matching limitations.
+Adicionar um assistente de transferência de wishlist para o Cardmarket depois desta funcionalidade. A primeira versão deve fornecer links/checklist de produto exato e uma exportação opcional de texto de decklist para o Cardmarket, com limitações de correspondência claras.

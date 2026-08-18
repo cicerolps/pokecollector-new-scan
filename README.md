@@ -428,8 +428,6 @@ O build e a instalação de dependências também contatam registros de pacotes/
 | [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md) | Componentes públicos de carta, variantes, galeria e fluxo de extensão |
 | [`docs/REVERSE_PROXY_AUTH.md`](docs/REVERSE_PROXY_AUTH.md) | Exceções de forward-auth para perfis e binders públicos |
 
-> **Nota:** os documentos técnicos acima ainda descrevem o mecanismo de reconhecimento antigo baseado em Gemini em alguns trechos — a atualização deles está pendente. O comportamento real do scanner é o descrito na seção [Sobre este fork](#-sobre-este-fork) e em `backend/services/card_scan_*.py`.
-
 ---
 
 ## 🔧 Referência de Configuração

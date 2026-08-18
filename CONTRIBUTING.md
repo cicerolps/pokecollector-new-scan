@@ -1,15 +1,15 @@
-# Contributing to PokéCollector
+# Contribuindo com o PokéCollector
 
-Contributions of every size are welcome: bug fixes, new features, visual ideas, documentation, and tests.
+Contribuições de qualquer tamanho são bem-vindas: correções de bugs, novas funcionalidades, ideias visuais, documentação e testes.
 
-## Development workflow
+## Fluxo de desenvolvimento
 
-1. Fork the repository and create a focused branch.
-2. Explain the user problem your change solves.
-3. Add or update tests and documentation where appropriate.
-4. Run the relevant checks before opening a pull request.
+1. Faça um fork do repositório e crie uma branch focada.
+2. Explique o problema de usuário que sua mudança resolve.
+3. Adicione ou atualize testes e documentação quando apropriado.
+4. Rode as verificações relevantes antes de abrir um pull request.
 
-For frontend work:
+Para trabalho no frontend:
 
 ```bash
 cd frontend
@@ -18,11 +18,11 @@ npm test
 npm run build
 ```
 
-The frontend test command also validates literal translation keys. Add new user-facing keys to `src/i18n/en.js`; other language bundles can fall back to English until a translation is contributed. Missing keys fail with the source file and line instead of appearing as raw labels in the app.
+O comando de teste do frontend também valida chaves de tradução literais. Adicione novas chaves voltadas ao usuário em `src/i18n/en.js`; outros pacotes de idioma podem cair para o inglês até que uma tradução seja contribuída. Chaves ausentes falham com o arquivo e a linha de origem, em vez de aparecer como rótulos crus no app.
 
-## Card interfaces
+## Interfaces de carta
 
-The public card system in `src/components/card-system` is the normal starting point for card interfaces. It provides established frames, rows, badges, dialogs, and loading/error states so contributors can focus on the feature itself.
+O sistema público de cartas em `src/components/card-system` é o ponto de partida normal para interfaces de carta. Ele fornece molduras, linhas, badges, diálogos e estados de carregamento/erro já estabelecidos, para que os contribuidores possam focar na própria funcionalidade.
 
 ```jsx
 import { CardDisplay, CardLegend, CardRow, CardStack } from '../components/card-system'
@@ -33,19 +33,19 @@ import { CardDisplay, CardLegend, CardRow, CardStack } from '../components/card-
 <CardStack card={card} image={image} layers={2} />
 ```
 
-This keeps new features visually consistent without asking contributors to memorize every design detail. The available components and variants are documented in [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md).
+Isso mantém as novas funcionalidades visualmente consistentes, sem pedir que os contribuidores memorizem cada detalhe de design. Os componentes e variantes disponíveis estão documentados em [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md).
 
-New visual ideas are encouraged. If an existing variant does not fit the feature, explain the difference and consider whether the idea should become a reusable shared variant:
+Novas ideias visuais são incentivadas. Se uma variante existente não se encaixa na funcionalidade, explique a diferença e considere se a ideia deveria virar uma variante compartilhada reutilizável:
 
-1. Describe why the existing variants do not fit.
-2. Decide with the reviewer whether the idea is feature-specific or broadly reusable.
-3. For a reusable idea, add it to the public card-system module and component gallery.
-4. Update the relevant tests and documentation for either approach.
+1. Descreva por que as variantes existentes não se encaixam.
+2. Decida com o revisor se a ideia é específica da funcionalidade ou amplamente reutilizável.
+3. Para uma ideia reutilizável, adicione-a ao módulo público card-system e à galeria de componentes.
+4. Atualize os testes e a documentação relevantes para qualquer uma das abordagens.
 
-That process gives contributors room to evolve the design while helping accepted improvements remain consistent across features. The guide is reviewed by maintainers; there is no automated rule rejecting an alternative implementation merely because it is new.
+Esse processo dá aos contribuidores espaço para evoluir o design, ao mesmo tempo em que ajuda melhorias aceitas a permanecerem consistentes entre funcionalidades. O guia é revisado por mantenedores; não há uma regra automática rejeitando uma implementação alternativa só porque ela é nova.
 
 ## Pull requests
 
-Keep pull requests focused and explain the reason for the change. Include desktop and mobile screenshots for visual work when practical. Reviewers use [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md) as a consistency checklist and may suggest adapting a contribution to the shared visual language before merge.
+Mantenha os pull requests focados e explique o motivo da mudança. Inclua screenshots de desktop e mobile para trabalho visual quando for prático. Revisores usam [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md) como checklist de consistência, e podem sugerir adaptar uma contribuição à linguagem visual compartilhada antes do merge.
 
-Be kind, clear, and assume good intent during review.
+Seja gentil, claro, e presuma boa intenção durante a revisão.

@@ -1,12 +1,12 @@
-# Card System
+# Sistema de Cartas
 
-PokéCollector exposes a public card-interface module at `frontend/src/components/card-system`. It is the normal starting point for card features because it already carries the established visual structure, responsive behavior, borders, state indicators, image fallbacks, and interaction states.
+O PokéCollector expõe um módulo público de interface de carta em `frontend/src/components/card-system`. É o ponto de partida normal para funcionalidades de carta, porque já carrega a estrutura visual estabelecida, comportamento responsivo, bordas, indicadores de estado, fallbacks de imagem e estados de interação.
 
-This guide is a shared reference for contributors, maintainers, and AI-assisted reviews. It helps new work fit the application without requiring anyone to memorize old screenshots. It is not a ban on new ideas: a genuinely new interaction or presentation can evolve the system after review.
+Este guia é uma referência compartilhada para contribuidores, mantenedores e revisões assistidas por IA. Ele ajuda um trabalho novo a se encaixar na aplicação sem exigir que ninguém memorize prints antigos. Não é uma proibição a ideias novas: uma interação ou apresentação genuinamente nova pode evoluir o sistema depois de revisão.
 
-## Public API
+## API Pública
 
-Import from the directory entry point:
+Importe a partir do ponto de entrada do diretório:
 
 ```jsx
 import {
@@ -19,93 +19,93 @@ import {
 } from '../components/card-system'
 ```
 
-| Component | Use |
+| Componente | Uso |
 | --- | --- |
-| `CardDisplay` | Full cards and artwork presentations |
-| `CardRow` | Compact list and table rows |
-| `CardIdentity` | Compact artwork, name, number, and metadata inside a larger row |
-| `CardDialog` | Shared card-detail dialog frame |
-| `CardLegend` | Collapsible or always-visible explanation of card badges and borders |
-| `CardStack` | Layered presentation for grouped prints, with shared artwork behavior |
+| `CardDisplay` | Apresentações completas de carta e arte |
+| `CardRow` | Linhas compactas de lista e tabela |
+| `CardIdentity` | Arte compacta, nome, número e metadados dentro de uma linha maior |
+| `CardDialog` | Moldura compartilhada de diálogo de detalhe da carta |
+| `CardLegend` | Explicação recolhível ou sempre visível dos badges e bordas da carta |
+| `CardStack` | Apresentação em camadas para impressões agrupadas, com comportamento de arte compartilhado |
 
-`CardDisplay` supports these variants:
+`CardDisplay` suporta estas variantes:
 
-| Variant | Intended context |
+| Variante | Contexto pretendido |
 | --- | --- |
-| `grid` | Standard collection, set, Pokédex, binder, and search grids |
-| `carousel` | Compact horizontal card groups |
-| `ranking` | Ranked and valuable-card presentations |
-| `selectable` | Bulk selection and picker workflows |
-| `artwork` | Complete artwork inside the shared border, without a caption |
-| `compact-artwork` | Small list/table thumbnail |
-| `comparison` | Responsive artwork used in migration/comparison rows |
+| `grid` | Grades padrão de coleção, set, Pokédex, binder e busca |
+| `carousel` | Grupos horizontais compactos de cartas |
+| `ranking` | Apresentações de ranking e cartas valiosas |
+| `selectable` | Fluxos de seleção em lote e escolha |
+| `artwork` | Arte completa dentro da borda compartilhada, sem legenda |
+| `compact-artwork` | Miniatura compacta de lista/tabela |
+| `comparison` | Arte responsiva usada em linhas de migração/comparação |
 
-The components accept the existing card data and action props. They automatically provide the shared visual states when given values such as `selected`, `dimWhenUnowned`, `unavailableReason`, `onClick`, or `onSelect`.
+Os componentes aceitam os dados de carta e props de ação existentes. Eles fornecem automaticamente os estados visuais compartilhados quando recebem valores como `selected`, `dimWhenUnowned`, `unavailableReason`, `onClick` ou `onSelect`.
 
-## Design tokens
+## Tokens de design
 
-Shared dimensions, radii, and border colors live in `card-system/tokens.css`; JavaScript consumers use `CARD_SYSTEM_TOKENS` from `tokens.js`. Adjust these tokens or a shared component when a design decision should change everywhere.
+Dimensões, raios e cores de borda compartilhados vivem em `card-system/tokens.css`; consumidores em JavaScript usam `CARD_SYSTEM_TOKENS` de `tokens.js`. Ajuste esses tokens ou um componente compartilhado quando uma decisão de design deve mudar em todo lugar.
 
-Pages remain responsible for their surrounding layout, grids, panels, filters, and feature-specific actions. Reusing the established card components is usually the cleanest option; when a feature needs something different, explain the reason so reviewers can decide whether it is a local interaction or a useful shared addition.
+As páginas continuam responsáveis pelo layout ao redor, grades, painéis, filtros e ações específicas da funcionalidade. Reutilizar os componentes de carta estabelecidos costuma ser a opção mais limpa; quando uma funcionalidade precisa de algo diferente, explique o motivo para que os revisores possam decidir se é uma interação local ou uma adição compartilhada útil.
 
-## Established visual language
+## Linguagem visual estabelecida
 
-Use these points when implementing or reviewing any screen that presents cards:
+Use estes pontos ao implementar ou revisar qualquer tela que apresente cartas:
 
-- Full cards use one frame. The default frame is grey; data, price, and image fallbacks use the shared purple, amber, and blue frame treatments. Manual artwork used because official artwork is missing belongs to the image-fallback treatment.
-- Hover and keyboard focus brighten the frame with a restrained glow. Touch actions must remain available without hover.
-- Ownership, print variation, quantity, wishlist, product-source, selection, and binder-progress indicators use the shared badges. Any screen that displays these indicators also provides the shared legend nearby.
-- Missing cards in comparison contexts such as Set and Pokédex views keep the grey ownership overlay. Disabled cards show a reason instead of silently ignoring interaction.
-- Card names stay on one ellipsized line in aligned grids and compact rows. The set abbreviation/card number and price remain aligned when neighboring names have different lengths.
-- Missing artwork uses the Pokémon card back. Loading uses the shared skeleton; failed supplied artwork offers retry; compact lists prioritize visible images and defer distant rows.
-- Compact rows show the complete artwork inside the standard compact frame. Collection, Analytics, Wishlist, trades, comparisons, rankings, binders, and optimizer rows should feel like the same family.
-- Dialogs use the shared floating, content-sized frame on desktop and mobile. The close action stays at the top-right and tabs/actions remain centered and usable with keyboard and touch.
-- Specialist workflows may optimize speed and selection behavior, but scanner, binder, optimizer, trade, bulk-selection, and migration views keep the shared card identity and state language.
+- Cartas completas usam uma moldura. A moldura padrão é cinza; fallbacks de dado, preço e imagem usam os tratamentos de moldura compartilhados roxo, âmbar e azul. Arte manual usada porque a arte oficial está ausente pertence ao tratamento de fallback de imagem.
+- Hover e foco por teclado clareiam a moldura com um brilho contido. Ações de toque precisam continuar disponíveis sem hover.
+- Indicadores de propriedade, variação de impressão, quantidade, wishlist, origem de produto, seleção e progresso de binder usam os badges compartilhados. Qualquer tela que exiba esses indicadores também fornece a legenda compartilhada por perto.
+- Cartas ausentes em contextos de comparação, como as visões de Set e Pokédex, mantêm a sobreposição cinza de não-propriedade. Cartas desabilitadas mostram um motivo em vez de ignorar a interação silenciosamente.
+- Nomes de carta ficam em uma linha com reticências em grades e linhas compactas alinhadas. A abreviação do set/número da carta e o preço permanecem alinhados quando nomes vizinhos têm tamanhos diferentes.
+- Arte ausente usa o verso da carta Pokémon. O carregamento usa o esqueleto compartilhado; arte fornecida que falha oferece nova tentativa; listas compactas priorizam imagens visíveis e adiam linhas distantes.
+- Linhas compactas mostram a arte completa dentro da moldura compacta padrão. Coleção, Análises, Wishlist, trocas, comparações, rankings, binders e linhas do otimizador devem parecer da mesma família.
+- Diálogos usam a moldura flutuante compartilhada, do tamanho do conteúdo, em desktop e mobile. A ação de fechar fica no canto superior direito, e abas/ações permanecem centralizadas e usáveis por teclado e toque.
+- Fluxos especializados podem otimizar velocidade e comportamento de seleção, mas as telas de scanner, binder, otimizador, troca, seleção em lote e migração mantêm a identidade de carta e a linguagem de estado compartilhadas.
 
-## Component gallery
+## Galeria de componentes
 
-In development, run:
+Em desenvolvimento, rode:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Open `/__card-system` to see the supported variants, ownership states, fallbacks, unavailable cards, legends, rows, and dialogs together. The route is excluded from production builds.
+Abra `/__card-system` para ver as variantes suportadas, estados de propriedade, fallbacks, cartas indisponíveis, legendas, linhas e diálogos juntos. A rota é excluída dos builds de produção.
 
-## Adding a new idea
+## Adicionando uma ideia nova
 
-Do not force a genuinely different interaction into the wrong variant. A contributor can propose a new shared pattern or a clearly justified feature-specific presentation:
+Não force uma interação genuinamente diferente na variante errada. Um contribuidor pode propor um padrão compartilhado novo, ou uma apresentação específica de funcionalidade claramente justificada:
 
-1. Describe the user need and why the closest existing pattern does not fit.
-2. Decide during review whether the idea is feature-specific or belongs in the shared components.
-3. Preserve keyboard, touch, loading, retry, unavailable, and responsive behavior.
-4. Show the result on desktop and mobile.
-5. If it becomes shared, add it to `CardSystemGallery.jsx`, tests, and this guide.
+1. Descreva a necessidade do usuário e por que o padrão existente mais próximo não se encaixa.
+2. Decida durante a revisão se a ideia é específica da funcionalidade ou pertence aos componentes compartilhados.
+3. Preserve o comportamento de teclado, toque, carregamento, nova tentativa, indisponibilidade e responsividade.
+4. Mostre o resultado em desktop e mobile.
+5. Se virar compartilhado, adicione a `CardSystemGallery.jsx`, aos testes e a este guia.
 
-Review should focus on whether the idea belongs in the shared system and whether existing consumers remain stable, not on discouraging the proposal.
+A revisão deve focar em saber se a ideia pertence ao sistema compartilhado e se os consumidores existentes permanecem estáveis, não em desencorajar a proposta.
 
-## Contributor checklist
+## Checklist do contribuidor
 
-- Identify the closest existing full-card, compact-row, ranking, selectable, comparison, stack, dialog, and legend patterns before starting.
-- Use shared components where they fit; explain intentional differences in the pull request.
-- Check real data combinations: owned/unowned, wishlist, multiple variants, quantities, mixed languages, all fallback-source combinations, manual artwork, missing artwork, and unavailable states.
-- Check long and missing names, numbers, prices, rarity, and metadata without breaking alignment.
-- Check loading, retry, cached remounts, large lists, keyboard, touch, and responsive behavior.
-- Include desktop and mobile screenshots for affected screens and update shared visual snapshots when appropriate.
-- Add English translation keys for new labels. Other locales may fall back to English until translated.
+- Identifique os padrões existentes mais próximos de carta completa, linha compacta, ranking, seleção, comparação, pilha, diálogo e legenda antes de começar.
+- Use componentes compartilhados onde eles se encaixam; explique diferenças intencionais no pull request.
+- Verifique combinações reais de dados: possuído/não possuído, wishlist, múltiplas variantes, quantidades, idiomas mistos, todas as combinações de fonte de fallback, arte manual, arte ausente e estados indisponíveis.
+- Verifique nomes, números, preços, raridade e metadados longos ou ausentes sem quebrar o alinhamento.
+- Verifique carregamento, nova tentativa, remontagens em cache, listas grandes, teclado, toque e comportamento responsivo.
+- Inclua screenshots de desktop e mobile para as telas afetadas, e atualize os snapshots visuais compartilhados quando apropriado.
+- Adicione chaves de tradução em inglês para novos rótulos. Outros idiomas podem cair para o inglês até serem traduzidos.
 
-## Reviewer checklist
+## Checklist do revisor
 
-Maintainers and AI-assisted reviews should use this checklist for every pull request or issue that adds or changes card UI:
+Mantenedores e revisões assistidas por IA devem usar este checklist para todo pull request ou issue que adicione ou altere UI de carta:
 
-1. Compare the proposal with the closest established patterns and the visual language above.
-2. Inspect every affected consumer, not only the screenshot or page named in the issue.
-3. Confirm that card data comes from the correct object, especially collection-item variant, quantity, condition, language, wishlist, and product state.
-4. Check that indicators have a legend and fallback frames still communicate data, price, image, and manual-artwork fallback states.
-5. Exercise edge states and specialist workflows rather than reviewing only the default card.
-6. Test representative real pages on desktop and mobile. Use Chromium and WebKit/Safari for browser-facing loading or layout changes.
-7. If the design is genuinely new, help the contributor integrate it cleanly or promote it into a shared pattern instead of rejecting the idea.
-8. Rework inconsistent details before merge and update this guide when the accepted visual language changes.
+1. Compare a proposta com os padrões estabelecidos mais próximos e a linguagem visual acima.
+2. Inspecione todo consumidor afetado, não só o screenshot ou a página citada na issue.
+3. Confirme que os dados da carta vêm do objeto correto, especialmente variante, quantidade, condição, idioma, wishlist e estado de produto do item de coleção.
+4. Verifique se os indicadores têm legenda e se as molduras de fallback ainda comunicam os estados de fallback de dado, preço, imagem e arte manual.
+5. Exercite estados de borda e fluxos especializados, em vez de revisar apenas a carta padrão.
+6. Teste páginas reais representativas em desktop e mobile. Use Chromium e WebKit/Safari para mudanças de carregamento ou layout voltadas ao navegador.
+7. Se o design for genuinamente novo, ajude o contribuidor a integrá-lo de forma limpa, ou promova-o a um padrão compartilhado, em vez de rejeitar a ideia.
+8. Ajuste detalhes inconsistentes antes do merge, e atualize este guia quando a linguagem visual aceita mudar.
 
-Automated unit, translation, build, and visual-regression tests remain useful safety nets. The visual suite covers the component gallery plus representative real Collection and Analytics pages on desktop and mobile, with a dedicated WebKit large-list check. Visual consistency is ultimately a review responsibility rather than a code-enforced import restriction.
+Os testes automatizados de unidade, tradução, build e regressão visual continuam sendo redes de segurança úteis. A suíte visual cobre a galeria de componentes mais páginas reais representativas de Coleção e Análises em desktop e mobile, com uma verificação dedicada de lista grande no WebKit. A consistência visual é, em última instância, uma responsabilidade de revisão, não uma restrição de importação aplicada por código.
