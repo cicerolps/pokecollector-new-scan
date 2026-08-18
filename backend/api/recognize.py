@@ -34,11 +34,11 @@ async def recognize_sanitized_card(
     except ValueError as exc:
         if trace:
             trace.record_error(f"Could not process image: {exc}")
-        raise HTTPException(status_code=400, detail=f"Bild konnte nicht verarbeitet werden: {exc}")
+        raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
     except Exception as exc:
         if trace:
             trace.record_error(f"Recognition failed: {type(exc).__name__}: {exc}")
-        raise HTTPException(status_code=500, detail=f"Erkennung fehlgeschlagen: {exc}")
+        raise HTTPException(status_code=500, detail=f"Recognition failed: {exc}")
 
     if trace:
         selected = None
