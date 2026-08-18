@@ -25,7 +25,7 @@ if (packageLock.packages?.['']?.version !== version) {
 if (!skipReadme && !readme.includes(`version-v${version}-`)) {
   errors.push(`README version badge does not reference v${version}`)
 }
-if (!skipReadme && !readme.includes(`Current version:** \`v${version}\``)) {
+if (!skipReadme && !readme.includes(`Versão atual:** \`v${version}\``)) {
   errors.push(`README current version text does not reference v${version}`)
 }
 

@@ -1,136 +1,151 @@
-# ⚠️ Disclaimer
-Everything below (and in this repo) is unapologetically vibecoded.
-Expect vibes, not guarantees. Proceed with good humor and version control.
+# ⚠️ Aviso
+Tudo abaixo (e neste repositório) foi feito no estilo "vibecoded", sem pedir desculpas.
+Espere vibe, não garantias. Prossiga com bom humor e controle de versão.
 
-Contributions are welcome. Open a pull request for fixes, features, or docs. Not sure where to start? Open an issue and we'll chat. Small improvements are great.
+Contribuições são bem-vindas. Abra um pull request para correções, funcionalidades ou documentação. Não sabe por onde começar? Abra uma issue e conversamos. Pequenas melhorias são ótimas.
 
-Found a bug or have an idea? Open an issue. Include steps to reproduce, expected vs. actual behavior. Screenshots or logs help.
+Encontrou um bug ou tem uma ideia? Abra uma issue. Inclua passos para reproduzir, comportamento esperado vs. real. Screenshots ou logs ajudam.
 
-Fork, branch, and submit a focused PR. Add or update tests and docs as needed. Explain the "why" and link related issues. Make sure checks pass.
+Faça um fork, crie uma branch e envie um PR focado. Adicione ou atualize testes e documentação conforme necessário. Explique o "porquê" e vincule issues relacionadas. Garanta que os checks passem.
 
-Be kind. Be clear. Assume good intent. Keep feedback constructive.
+Seja gentil. Seja claro. Presuma boa intenção. Mantenha o feedback construtivo.
 
 # 🃏 PokéCollector
 
-> A self-hosted, full-stack Pokémon TCG collection manager for cards, sealed products, binders, analytics, scanning, and multi-user collections.
+> Um gerenciador de coleção de Pokémon TCG full-stack e self-hosted para cartas, produtos lacrados, binders, análises, escaneamento e coleções multiusuário.
 
-- 🌐 **Website:** [pokecollector.romerg.de](https://pokecollector.romerg.de/)
-- 👤 **Creator:** [Gilles Romer](https://romerg.de/)
-- ✉️ **Contact:** [info@romerg.de](mailto:info@romerg.de)
+- 🌐 **Site do projeto original:** [pokecollector.romerg.de](https://pokecollector.romerg.de/)
+- 👤 **Criador original:** [Gilles Romer](https://romerg.de/)
+- ✉️ **Contato do projeto original:** [info@romerg.de](mailto:info@romerg.de)
 
 ![Version](https://img.shields.io/badge/version-v1.40.0-e3000b?style=flat-square) ![Dark Theme](https://img.shields.io/badge/theme-dark-1a1a2e?style=flat-square) ![TCGdex](https://img.shields.io/badge/card%20data-TCGdex-e3000b?style=flat-square) ![Docker](https://img.shields.io/badge/deploy-Docker-2496ed?style=flat-square) ![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?style=flat-square) ![React](https://img.shields.io/badge/frontend-React%2018-61dafb?style=flat-square) [![Support animal rescue](https://img.shields.io/badge/support-animal%20rescue-e3000b?style=flat-square)](https://pokecollector.romerg.de/#support)
 
-**Current version:** `v1.40.0` · Releases are tracked on the [GitHub Releases page](https://github.com/Git-Romer/pokecollector/releases).
+**Versão atual:** `v1.40.0` · Os lançamentos deste fork são acompanhados na [página de Releases do GitHub](https://github.com/cicerolps/pokecollector-new-scan/releases).
 
-![WebApp Preview](preview-homescreen.png)
-
----
-
-## 📑 Table of Contents
-
-- [Features](#-features)
-- [Quick Start](#-quick-start)
-- [Reverse Proxy Authentication](#-reverse-proxy-authentication)
-- [Managing Users](#-managing-users)
-- [Environment Variables](#-environment-variables)
-- [Sync Behavior](#-sync-behavior)
-- [Architecture](#-architecture)
-- [Tech Stack](#-tech-stack)
-- [External Sources](#-external-sources)
-- [Documentation](#-documentation)
-- [Configuration Reference](#-configuration-reference)
-- [Updating](#-updating)
-- [Community Projects](#-community-projects)
-- [Support](#-support)
-- [License](#-license)
+![Prévia do WebApp](preview-homescreen.png)
 
 ---
 
-## ✨ Features
+## 🔀 Sobre este fork
 
-### 📦 Collection Management
-- Add cards with quantity, condition, variant, and purchase price
-- Variants are now limited to `Normal`, `Holo`, `Reverse Holo`, and `First Edition`
-- Card rarity is read-only from TCGdex and displayed separately from variant
-- Track localized TCGdex card rows separately by language code, including all supported TCGdex languages
-- Manually create owner-scoped custom cards not present in TCGdex
-- Share manual cards as copy-only templates so other trainers receive independent cards and portfolio values
+Este repositório é um fork do [PokéCollector](https://github.com/Git-Romer/pokecollector) original, criado por Gilles Romer. A filosofia e praticamente toda a aplicação foram mantidas exatamente como estão — coleção, binders, wishlist, preços, multiusuário, backups, etc. A única mudança estrutural é **como as cartas são reconhecidas ao escanear**:
 
-### 🔍 Search & Scanning
-- Search the locally cached card database by name, set, type, rarity, HP, artist, and more
-- Short-code search like `PFL 001`
-- Multi-select search results and bulk-add matching cards to the collection
-- Unified persistent scanner with Gemini-powered individual and composite batch recognition
-- Persistent, restart-safe scan queue with a review inbox, 14-day expiry, and automatic retries that do not consume recognition attempts for rate limits
-- Shared per-key Gemini quota handling distinguishes daily quotas from short-term limits, honors provider retry delays, and blocks concurrent requests using the same key
-- Deterministic matching ranks local number, printed total, set code, regulation mark, artist, and HP before optional visual verification
-- Conservative local pHash matching can resolve exceptionally clear candidates without a second Gemini request and safely abstains on ambiguous photos
-- Native camera and gallery capture with an optional positioning guide; queued photos are sanitized and deleted after confirmation or dismissal
-- Scanner strips suffixes like `ex` / `GX` / `VSTAR` for broader matching
-- Optional consent-controlled scanner diagnostics for installations that enable `SCAN_TRACE_DIR`; disabled per user by default with a separate delete action
-- Card modal auto-preselects a likely variant from TCGdex variant flags
+| | Versão original (upstream) | Este fork |
+|---|---|---|
+| Motor de reconhecimento | Google Gemini (API externa, sujeita a limites e custo) | Pipeline 100% local: OpenCV + hash perceptual + EasyOCR |
+| Precisa de chave de API? | Sim (`GEMINI_API_KEY`) | Não |
+| Depende de serviço externo para reconhecer a carta? | Sim | Não |
+| Escaneamento composto (várias cartas em uma foto) | Sim | Não por enquanto (removido — ainda não existe um equivalente local) |
+
+Na prática: a foto é recortada e normalizada com OpenCV, comparada por hash perceptual (phash/dhash/whash) contra um banco de hashes gerado a partir do catálogo já sincronizado, e o número impresso na carta (lido via EasyOCR) desempata os casos ambíguos. Tudo roda no seu próprio servidor, sem chamada de rede para reconhecer a carta.
+
+O restante deste documento descreve a aplicação como um todo — a grande maioria dela é idêntica ao projeto original.
+
+---
+
+## 📑 Índice
+
+- [Funcionalidades](#-funcionalidades)
+- [Início Rápido](#-início-rápido)
+- [Autenticação via Proxy Reverso](#-autenticação-via-proxy-reverso)
+- [Gerenciando Usuários](#-gerenciando-usuários)
+- [Variáveis de Ambiente](#-variáveis-de-ambiente)
+- [Comportamento de Sincronização](#-comportamento-de-sincronização)
+- [Arquitetura](#-arquitetura)
+- [Stack Tecnológica](#-stack-tecnológica)
+- [Fontes Externas](#-fontes-externas)
+- [Documentação](#-documentação)
+- [Referência de Configuração](#-referência-de-configuração)
+- [Atualizando](#-atualizando)
+- [Projetos da Comunidade](#-projetos-da-comunidade)
+- [Apoie o Projeto](#-apoie-o-projeto)
+- [Licença](#-licença)
+
+---
+
+## ✨ Funcionalidades
+
+### 📦 Gerenciamento de Coleção
+- Adicione cartas com quantidade, condição, variante e preço de compra
+- Variantes agora são limitadas a `Normal`, `Holo`, `Reverse Holo` e `First Edition`
+- A raridade da carta vem da TCGdex (somente leitura) e é exibida separadamente da variante
+- Acompanhe linhas de cartas localizadas da TCGdex separadamente por código de idioma, incluindo todos os idiomas suportados pela TCGdex
+- Crie manualmente cartas personalizadas, restritas ao dono, que não existem na TCGdex
+- Compartilhe cartas manuais como templates somente-cópia, para que outros treinadores recebam cartas e valores de portfólio independentes
+
+### 🔍 Busca & Escaneamento
+- Busque no banco de cartas cacheado localmente por nome, set, tipo, raridade, HP, artista e mais
+- Busca por código curto, como `PFL 001`
+- Seleção múltipla nos resultados de busca e adição em lote à coleção
+- Scanner persistente com reconhecimento 100% local: OpenCV recorta e normaliza a foto, hash perceptual (phash/dhash/whash) identifica a carta comparando com o catálogo, e OCR (EasyOCR) confere o número impresso para desempatar casos ambíguos — sem API externa, sem chave, sem limite de uso
+- Fila de escaneamento persistente e resistente a reinícios, com caixa de revisão, expiração em 14 dias e novas tentativas automáticas
+- Correspondência determinística prioriza número local, total impresso, código do set, marca de regulamentação, artista e HP
+- Captura nativa por câmera e galeria, com guia de posicionamento opcional; fotos na fila são sanitizadas e apagadas após confirmação ou descarte
+- O scanner remove sufixos como `ex` / `GX` / `VSTAR` para ampliar a correspondência
+- Diagnóstico opcional do scanner (com consentimento) para instalações que habilitam `SCAN_TRACE_DIR`; desativado por usuário por padrão, com ação de exclusão separada
+- O modal da carta pré-seleciona automaticamente uma variante provável a partir das flags de variante da TCGdex
 
 ### 🗂️ Sets, Binders & Wishlist
-- Set overview with completion progress and per-set checklist
-- National Pokédex #001–1025 with generation filters, species completion, locally cached sprites/artwork, and click-through card printings
-- Virtual binders for collection and checklist views
-- Exact-copy quantities in collection binders, with cross-binder allocation limits and total/unique counts
-- Wishlist with Telegram price alerts
+- Visão geral dos sets com progresso de conclusão e checklist por set
+- Pokédex Nacional #001–1025 com filtros por geração, conclusão por espécie, sprites/artes cacheados localmente e navegação até as impressões da carta
+- Binders virtuais para visões de coleção e checklist
+- Quantidades de cópia exata em binders de coleção, com limites de alocação entre binders e contagens totais/únicas
+- Wishlist com alertas de preço via Telegram
 
-### 📈 Prices, Portfolio & Analytics
-- Cardmarket EUR pricing and TCGPlayer USD pricing via TCGdex
-- Price history charts and portfolio snapshots
-- Dashboard, duplicates, top movers, rarity stats, and investment tracker
-- Sealed product tracking with realized and unrealized P&L
+### 📈 Preços, Portfólio & Análises
+- Preços Cardmarket em EUR e TCGPlayer em USD via TCGdex
+- Gráficos de histórico de preço e snapshots de portfólio
+- Dashboard, duplicatas, maiores variações, estatísticas de raridade e rastreador de investimento
+- Rastreamento de produtos lacrados com P&L realizado e não realizado
 
-### 👤 Single-User & Multi-User
-- Single-user mode: no login required, auto-auth as admin
-- Multi-user mode: JWT login, admin/trainer roles, separate user data
-- Per-user settings for language, currency, Telegram keys, and Gemini key
-- Force password change support on first login
-- Profile avatar and profile name editing
-- Cascade deletion of user-owned data
+### 👤 Usuário Único & Multiusuário
+- Modo usuário único: sem login, autenticação automática como admin
+- Modo multiusuário: login via JWT, papéis admin/treinador, dados separados por usuário
+- Configurações por usuário para idioma, moeda e chaves do Telegram
+- Suporte a troca obrigatória de senha no primeiro login
+- Edição de avatar e nome de perfil
+- Exclusão em cascata dos dados de um usuário
 
-### 🏆 Social & Community
-- Leaderboard, trainer comparison, and achievements in multi-user mode
-- View other trainers' collections from the Leaderboard
-- Optional public trainer profiles with trainer-name URLs, a public directory, individually shared collection binders, and opt-in market values
-- Admin-controlled public sharing switch, disabled by default on new and upgraded installations
-- Community section in Settings with GitHub contributors and PokéCollector supporters
+### 🏆 Social & Comunidade
+- Leaderboard, comparação entre treinadores e conquistas no modo multiusuário
+- Veja coleções de outros treinadores pelo Leaderboard
+- Perfis públicos opcionais com URLs por nome de treinador, diretório público, binders de coleção compartilhados individualmente e valores de mercado opt-in
+- Interruptor de compartilhamento público controlado pelo admin, desativado por padrão em instalações novas e atualizadas
+- Seção de Comunidade nas Configurações com contribuidores do GitHub e apoiadores do PokéCollector
 
-### 🎨 UX & Localization
-- Compact portal navigation with 6 primary home items and grouped tab navigation
-- App UI translations for all supported TCGdex languages, plus Swedish
-- 9 Pokemon-type color themes: Default, Fire, Water, Grass, Electric, Psychic, Dragon, Dark, Fairy
+### 🎨 UX & Localização
+- Navegação compacta com 6 itens principais na home e navegação por abas agrupadas
+- Traduções da UI para todos os idiomas suportados pela TCGdex, mais sueco
+- 9 temas de cor por tipo de Pokémon: Padrão, Fogo, Água, Planta, Elétrico, Psíquico, Dragão, Sombrio, Fada
 
-### ⚙️ Utilities
-- CSV and PDF export
-- Strict CSV collection import with a downloadable template; required row values are `set_code` and `number`, while `quantity`, `condition`, `variant`, `lang`, and `purchase_price` may be blank
-- Admin-only sync endpoints and scheduler controls
-- Backup and restore, including selective backup groups for collection, users, cards, products, system data, and images
-- Backend image proxy/cache for cards and sets
+### ⚙️ Utilitários
+- Exportação em CSV e PDF
+- Importação estrita de coleção via CSV, com template para download; os valores obrigatórios por linha são `set_code` e `number`, enquanto `quantity`, `condition`, `variant`, `lang` e `purchase_price` podem ficar em branco
+- Endpoints de sincronização e controles do agendador restritos ao admin
+- Backup e restauração, incluindo grupos seletivos de backup para coleção, usuários, cartas, produtos, dados do sistema e imagens
+- Proxy/cache de imagens no backend para cartas e sets
 
-### CSV Collection Import
+### Importação de Coleção via CSV
 
-The Collection page includes an **Import CSV** action and a downloadable template. CSV imports are intentionally strict: the header must be exactly:
+A página de Coleção inclui uma ação **Importar CSV** e um template para download. As importações de CSV são propositalmente estritas: o cabeçalho deve ser exatamente:
 
 ```csv
 set_code,number,quantity,condition,variant,lang,purchase_price
 ```
 
-All columns must be present, but only `set_code` and `number` need values in each row. Use the card code shown in PokéCollector/card lists, for example `ASC 152`: `ASC` goes into `set_code`, and `152` goes into `number`.
+Todas as colunas devem estar presentes, mas apenas `set_code` e `number` precisam de valor em cada linha. Use o código da carta mostrado nas listas do PokéCollector, por exemplo `ASC 152`: `ASC` vai em `set_code`, e `152` vai em `number`.
 
-| Column | Required value? | Notes |
+| Coluna | Valor obrigatório? | Notas |
 | --- | --- | --- |
-| `set_code` | Yes | First part of the card code shown in the app, e.g. `ASC` from `ASC 152`. |
-| `number` | Yes | Second part of the card code shown in the app, e.g. `152` from `ASC 152`. |
-| `quantity` | No | Defaults to `1`; must be `1`-`999` when provided. |
-| `condition` | No | Defaults to `NM`; allowed: `Mint`, `NM`, `LP`, `MP`, `HP`. |
-| `variant` | No | Leave blank or use `Normal`, `Holo`, `Reverse Holo`, `First Edition`. |
-| `lang` | No | Defaults to `en`; accepts any supported TCGdex language code. |
-| `purchase_price` | No | Optional per-card purchase price. |
+| `set_code` | Sim | Primeira parte do código da carta mostrado no app, ex.: `ASC` de `ASC 152`. |
+| `number` | Sim | Segunda parte do código da carta mostrado no app, ex.: `152` de `ASC 152`. |
+| `quantity` | Não | Padrão `1`; deve estar entre `1` e `999` quando informado. |
+| `condition` | Não | Padrão `NM`; permitidos: `Mint`, `NM`, `LP`, `MP`, `HP`. |
+| `variant` | Não | Deixe em branco ou use `Normal`, `Holo`, `Reverse Holo`, `First Edition`. |
+| `lang` | Não | Padrão `en`; aceita qualquer código de idioma suportado pela TCGdex. |
+| `purchase_price` | Não | Preço de compra opcional por carta. |
 
-Example:
+Exemplo:
 
 ```csv
 set_code,number,quantity,condition,variant,lang,purchase_price
@@ -138,227 +153,223 @@ ASC,152,2,NM,,en,
 PFL,001,1,LP,Reverse Holo,de,1.25
 ```
 
-If any row contains a wrong value or an unknown card code, the import does not add any cards. The response shows the affected row number, so the CSV can be corrected and uploaded again.
+Se qualquer linha tiver um valor incorreto ou um código de carta desconhecido, a importação não adiciona nenhuma carta. A resposta mostra o número da linha afetada, para que o CSV possa ser corrigido e reenviado.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Início Rápido
 
-### Prerequisites
+### Pré-requisitos
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/)
 
-### 1. Clone & Configure
+### 1. Clonar & Configurar
 
 ```bash
-git clone https://github.com/Git-Romer/pokecollector.git
-cd pokecollector
+git clone https://github.com/cicerolps/pokecollector-new-scan.git
+cd pokecollector-new-scan
 ```
 
-Create a `.env` file in the project root:
+Crie um arquivo `.env` na raiz do projeto:
 
 ```env
-POSTGRES_PASSWORD=your_secure_password
-JWT_SECRET_KEY=some_long_random_string
+POSTGRES_PASSWORD=sua_senha_segura
+JWT_SECRET_KEY=uma_string_aleatoria_longa
 
-# Optional
+# Opcional
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your_admin_password
-GEMINI_API_KEY=your_gemini_key
-GEMINI_MODEL=gemini-flash-latest
-TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_CHAT_ID=your_chat_id
+ADMIN_PASSWORD=sua_senha_de_admin
+TELEGRAM_BOT_TOKEN=seu_token_do_bot
+TELEGRAM_CHAT_ID=seu_chat_id
 TCGDEX_SYNC_LANGUAGES=en,de
 PUBLIC_MODE=false
-CORS_ORIGINS=https://yourdomain.com
+CORS_ORIGINS=https://seudominio.com
 ```
 
-### 2. Start
+### 2. Iniciar
 
 ```bash
 mkdir -p data/pokedex-images backups
 docker compose up -d
 ```
 
-### 3. Open
+### 3. Abrir
 
-| Service | URL |
+| Serviço | URL |
 |---------|-----|
 | App | http://localhost:3000 |
-| API docs | http://localhost:8000/docs |
+| Documentação da API | http://localhost:8000/docs |
 
-### 4. First Sync
+### 4. Primeira Sincronização
 
-On first launch, trigger a sync from the app to populate sets and cards from TCGdex.
+No primeiro uso, dispare uma sincronização pelo app para popular sets e cartas a partir da TCGdex.
 
-After upgrading an existing catalogue, the backend automatically runs the one-time Pokédex metadata backfill in the background and records completion in the database. If you need to retry or inspect it manually, run:
+Depois de atualizar um catálogo já existente, o backend roda automaticamente em segundo plano o backfill único de metadados da Pokédex e registra a conclusão no banco. Se precisar repetir ou inspecionar manualmente, rode:
 
 ```bash
 docker compose exec backend python -m scripts.backfill_pokedex_metadata --limit 5000
 ```
 
-Repeat the metadata command until `attempted` is `0`. You can optionally pre-cache all species images:
+Repita o comando de metadados até `attempted` ser `0`. Opcionalmente, você pode pré-cachear todas as imagens de espécies:
 
 ```bash
 docker compose exec backend python -m scripts.cache_pokedex_images
 ```
 
-See [National Pokédex documentation](docs/POKEDEX.md) for the data model, routes, cache behavior, and Cardmarket links.
+Veja a [documentação da Pokédex Nacional](docs/POKEDEX.md) para o modelo de dados, rotas, comportamento de cache e links do Cardmarket.
 
 ### 5. Login
 
-- In single-user mode, login is skipped and the app auto-authenticates as admin
-- In multi-user mode, use the admin account created from `ADMIN_USERNAME` / `ADMIN_PASSWORD`
-- If `ADMIN_PASSWORD` is omitted, a random password may be logged during bootstrap
+- No modo usuário único, o login é pulado e o app se autentica automaticamente como admin
+- No modo multiusuário, use a conta admin criada a partir de `ADMIN_USERNAME` / `ADMIN_PASSWORD`
+- Se `ADMIN_PASSWORD` for omitido, uma senha aleatória pode ser registrada no log durante o bootstrap
 
 > [!WARNING]
-> Single-user mode has no authentication: every client that can reach the app is treated as the administrator. Use it only on a trusted local network. Do not expose a single-user installation to the internet; enable multi-user mode and protect public deployments with HTTPS and an appropriately configured reverse proxy.
+> O modo usuário único não tem autenticação: todo cliente que conseguir acessar o app é tratado como administrador. Use apenas em uma rede local confiável. Não exponha uma instalação em modo usuário único à internet; habilite o modo multiusuário e proteja implantações públicas com HTTPS e um proxy reverso configurado adequadamente.
 
 ---
 
-## 🔐 Reverse Proxy Authentication
+## 🔐 Autenticação via Proxy Reverso
 
-If PokéCollector is protected by Authentik, Authelia, oauth2-proxy, or another forward-auth layer, the proxy checks requests before they reach PokéCollector. Enabling public profiles inside the app is therefore not enough on its own. The proxy must also allow the public pages, their public API calls, and the assets those pages use.
+Se o PokéCollector estiver protegido por Authentik, Authelia, oauth2-proxy ou outra camada de forward-auth, o proxy verifica as requisições antes que elas cheguem ao PokéCollector. Habilitar perfis públicos dentro do app não é suficiente sozinho. O proxy também precisa liberar as páginas públicas, suas chamadas de API públicas e os assets usados por essas páginas.
 
-See [Reverse proxy authentication](docs/REVERSE_PROXY_AUTH.md) for the complete route list, Authentik examples, and a verification checklist. Do not bypass authentication for all `/api` routes.
+Veja [Autenticação via proxy reverso](docs/REVERSE_PROXY_AUTH.md) para a lista completa de rotas, exemplos com Authentik e um checklist de verificação. Não desabilite a autenticação para todas as rotas `/api`.
 
 ---
 
-## 👥 Managing Users
+## 👥 Gerenciando Usuários
 
-User management is available from the app UI when multi-user mode is enabled.
+O gerenciamento de usuários está disponível na UI do app quando o modo multiusuário está habilitado.
 
-1. Log in as an admin user.
-2. Go to **Settings**.
-3. Enable **Multi-User Mode** if it is not enabled yet.
-4. Open the **Users** tab in Settings.
+1. Faça login como usuário admin.
+2. Vá em **Configurações**.
+3. Habilite o **Modo Multiusuário**, se ainda não estiver habilitado.
+4. Abra a aba **Usuários** em Configurações.
 
-From the **Users** tab, admins can:
+Na aba **Usuários**, admins podem:
 
-- add new users
-- edit existing users
-- change user roles between `admin` and `trainer`
-- activate or deactivate users
-- delete other users
-- force new users to change their password on first login
+- adicionar novos usuários
+- editar usuários existentes
+- alterar o papel do usuário entre `admin` e `treinador`
+- ativar ou desativar usuários
+- excluir outros usuários
+- forçar novos usuários a trocarem a senha no primeiro login
 
-The **Users** tab is only visible to admin users and only while multi-user mode is enabled. In single-user mode, PokéCollector skips login and uses the bootstrap admin account automatically.
+A aba **Usuários** só é visível para usuários admin e apenas enquanto o modo multiusuário está habilitado. No modo usuário único, o PokéCollector pula o login e usa automaticamente a conta admin de bootstrap.
 
-### Enabling multi-user mode without locking yourself out
+### Habilitando o modo multiusuário sem se trancar para fora
 
-Turning on multi-user mode enforces the login screen immediately and signs you out, and you then sign back in as the bootstrap admin. In single-user mode you never had to enter that password, so if you did not set `ADMIN_PASSWORD` it is the random one from the first-run log and you may not know it. Set a known password **before** enabling multi-user mode. From the host:
+Ativar o modo multiusuário força a tela de login imediatamente e desconecta você, que então faz login novamente como o admin de bootstrap. No modo usuário único você nunca precisou digitar essa senha, então, se você não definiu `ADMIN_PASSWORD`, ela é a senha aleatória do log da primeira execução, e você pode não conhecê-la. Defina uma senha conhecida **antes** de habilitar o modo multiusuário. A partir do host:
 
 ```bash
 # Docker
 docker compose exec backend python -m scripts.set_admin_password
-# Native install (run in the backend virtualenv, from the backend working directory)
+# Instalação nativa (rode no virtualenv do backend, a partir do diretório de trabalho do backend)
 python -m scripts.set_admin_password
 ```
 
-The script prompts for the new password (add `--username <name>` for a non-default admin, or `--make-admin` if the only admin was demoted).
+O script pede a nova senha (adicione `--username <nome>` para um admin não padrão, ou `--make-admin` se o único admin foi rebaixado).
 
-### Recovering from a lockout
+### Recuperando-se de um bloqueio
 
-If you are already locked out of multi-user mode, set `USER_MODE=single` in the environment and restart. That pins single-user mode and disables the login screen regardless of the stored setting, so you regain local admin access; reset the password with the script above, then remove the variable and restart to return to multi-user mode. While `USER_MODE` is set, the Multi-User Mode toggle in Settings is disabled and shows that the environment controls it. Because `USER_MODE=single` disables the login screen, treat it as a local/LAN recovery tool and do not leave it set on an internet-facing install. (`USER_MODE=multi` pins multi-user mode instead, which is safe to leave set.)
+Se você já está trancado para fora do modo multiusuário, defina `USER_MODE=single` no ambiente e reinicie. Isso fixa o modo usuário único e desabilita a tela de login independentemente da configuração salva, recuperando seu acesso local de admin; redefina a senha com o script acima, depois remova a variável e reinicie para voltar ao modo multiusuário. Enquanto `USER_MODE` estiver definido, o interruptor de Modo Multiusuário em Configurações fica desabilitado e mostra que o ambiente o controla. Como `USER_MODE=single` desabilita a tela de login, trate-o como uma ferramenta de recuperação local/LAN e não o deixe definido em uma instalação exposta à internet. (`USER_MODE=multi` fixa o modo multiusuário, que é seguro deixar definido.)
 
 ---
 
-## 🔧 Environment Variables
+## 🔧 Variáveis de Ambiente
 
-### Required
+### Obrigatórias
 
-| Variable | Description | Default |
+| Variável | Descrição | Padrão |
 |----------|-------------|---------|
-| `POSTGRES_PASSWORD` | PostgreSQL database password | `changeme` |
+| `POSTGRES_PASSWORD` | Senha do banco de dados PostgreSQL | `changeme` |
 
-### Recommended
+### Recomendadas
 
-| Variable | Description | Default |
+| Variável | Descrição | Padrão |
 |----------|-------------|---------|
-| `JWT_SECRET_KEY` | Secret that signs login tokens. Anyone who knows it can forge a session for any account, including admin, so treat it as sensitive. Leave it unset to have a strong key generated and persisted automatically (under `data/auth/`); set it only if you want to control the value or share it across replicas. An empty value is ignored rather than used. | Generated and persisted |
+| `JWT_SECRET_KEY` | Segredo que assina os tokens de login. Quem o conhece pode forjar uma sessão de qualquer conta, incluindo admin, então trate como sensível. Deixe sem definir para que uma chave forte seja gerada e persistida automaticamente (em `data/auth/`); defina apenas se quiser controlar o valor ou compartilhá-lo entre réplicas. Um valor vazio é ignorado em vez de usado. | Gerada e persistida |
 
-### Optional
+### Opcionais
 
-| Variable | Description | Default |
+| Variável | Descrição | Padrão |
 |----------|-------------|---------|
-| `ADMIN_USERNAME` | Username for the bootstrap admin account | `admin` |
-| `ADMIN_PASSWORD` | Password for the bootstrap admin account | Random, optionally logged |
-| `GEMINI_API_KEY` | Initial Gemini key for the admin user; other users configure their own key in Settings | *(empty)* |
-| `GEMINI_MODEL` | Gemini model used by the card scanner. Change this if Google retires the default model for new API keys. | `gemini-flash-latest` |
-| `SCAN_TRACE_DIR` | Enables consent-controlled scanner diagnostics when set to a writable container path. With the standard compose volume, use `/app/data/scan-traces`. Each user must still opt in separately in Settings. | *(empty / disabled)* |
-| `SCAN_TRACE_STORAGE_DIR` | Stable cleanup path for previously stored scanner diagnostics. Standard Docker Compose sets this to `/app/data/scan-traces`; custom deployments should keep it pointed at the storage location even when `SCAN_TRACE_DIR` is unset. | `/app/data/scan-traces` with Docker Compose |
-| `TELEGRAM_BOT_TOKEN` | Initial Telegram bot token for the admin user | *(empty)* |
-| `TELEGRAM_CHAT_ID` | Initial Telegram chat ID for the admin user | *(empty)* |
-| `TCGDEX_SYNC_LANGUAGES` | Initial admin default for TCGdex set/card sync languages on first launch only. After bootstrap, the DB setting in Settings is authoritative. Comma-separated TCGdex language codes, or `all` to enable every supported TCGdex language. Empty or invalid values safely fall back to `en,de`. Extra languages increase sync time, API calls, and database size. | `en,de` |
-| `ADMIN_BOOTSTRAP_LOG` | Whether bootstrap credentials may be logged on first start | `true` |
-| `USER_MODE` | Pin the mode from the environment, overriding the stored setting and disabling the in-app toggle. `single` forces single-user (no login screen) and is the recovery hatch after a multi-user lockout; `multi` forces multi-user. Because `single` disables authentication, use it only on a local/LAN install and unset it once recovered. Unset means the in-app setting controls the mode. | *(unset)* |
-| `PUBLIC_MODE` | Enable SEO meta tags, Open Graph, and allow search engine indexing. Default blocks all crawlers. Requires rebuild. | `false` |
-| `CORS_ORIGINS` | Comma-separated list of allowed origins for CORS. If empty, allows all origins. Set to your domain for production (e.g. `https://pokecollector.romerg.de`). | *(all)* |
-| `POKEDEX_METADATA_BACKFILL_ON_STARTUP` | Run the one-time Pokédex metadata backfill automatically after startup when existing card rows are missing `dex_ids` or Cardmarket product metadata | `true` |
-| `POKEDEX_METADATA_BACKFILL_BATCH_LIMIT` | Number of cards selected per automatic Pokédex metadata backfill batch | `5000` |
-| `POKEDEX_METADATA_BACKFILL_BATCH_DELAY_SECONDS` | Pause between automatic Pokédex metadata backfill batches to avoid a tight TCGdex request loop | `0.5` |
-| `PRE_UPGRADE_BACKUP_ENABLED` | Create an automatic SQL backup before startup migrations when an existing install starts on a new app version | `true` |
-| `PRE_UPGRADE_BACKUP_REQUIRED` | Stop startup if the automatic pre-upgrade backup fails. Set to `false` only if you have another verified backup process. | `true` |
-| `PRE_UPGRADE_BACKUP_KEEP` | Number of automatic pre-upgrade backups to retain in `/app/backups`; minimum `1` | `10` |
+| `ADMIN_USERNAME` | Usuário da conta admin de bootstrap | `admin` |
+| `ADMIN_PASSWORD` | Senha da conta admin de bootstrap | Aleatória, pode ser registrada no log |
+| `SCAN_TRACE_DIR` | Habilita diagnóstico do scanner com consentimento quando definido para um caminho gravável no container. Com o volume padrão do compose, use `/app/data/scan-traces`. Cada usuário ainda precisa habilitar individualmente. | *(vazio / desabilitado)* |
+| `SCAN_TRACE_STORAGE_DIR` | Caminho estável de limpeza para diagnósticos do scanner já armazenados. O Docker Compose padrão define isso como `/app/data/scan-traces`; implantações customizadas devem manter isso apontado para o local de armazenamento mesmo quando `SCAN_TRACE_DIR` não estiver definido. | `/app/data/scan-traces` com Docker Compose |
+| `TELEGRAM_BOT_TOKEN` | Token inicial do bot do Telegram para o usuário admin | *(vazio)* |
+| `TELEGRAM_CHAT_ID` | Chat ID inicial do Telegram para o usuário admin | *(vazio)* |
+| `TCGDEX_SYNC_LANGUAGES` | Padrão inicial do admin para os idiomas de sincronização de sets/cartas da TCGdex, apenas na primeira execução. Depois do bootstrap, a configuração no banco (em Configurações) é a que vale. Códigos de idioma da TCGdex separados por vírgula, ou `all` para habilitar todos os idiomas suportados. Valores vazios ou inválidos caem para `en,de`. Idiomas extras aumentam o tempo de sincronização, as chamadas de API e o tamanho do banco. | `en,de` |
+| `ADMIN_BOOTSTRAP_LOG` | Se as credenciais de bootstrap podem ser registradas no log na primeira execução | `true` |
+| `USER_MODE` | Fixa o modo a partir do ambiente, sobrepondo a configuração salva e desabilitando o interruptor no app. `single` força o modo usuário único (sem tela de login) e é a saída de emergência após um bloqueio no modo multiusuário; `multi` força o modo multiusuário. Como `single` desabilita a autenticação, use apenas em uma instalação local/LAN e remova a variável depois de recuperado. Não definido significa que a configuração no app controla o modo. | *(não definido)* |
+| `PUBLIC_MODE` | Habilita meta tags de SEO, Open Graph e permite indexação por buscadores. O padrão bloqueia todos os crawlers. Requer rebuild. | `false` |
+| `CORS_ORIGINS` | Lista separada por vírgula de origens permitidas para CORS. Se vazio, permite todas as origens. Defina para seu domínio em produção (ex.: `https://pokecollector.romerg.de`). | *(todas)* |
+| `POKEDEX_METADATA_BACKFILL_ON_STARTUP` | Roda automaticamente o backfill único de metadados da Pokédex após a inicialização, quando linhas de cartas existentes não têm `dex_ids` ou metadados de produto do Cardmarket | `true` |
+| `POKEDEX_METADATA_BACKFILL_BATCH_LIMIT` | Número de cartas selecionadas por lote automático de backfill de metadados da Pokédex | `5000` |
+| `POKEDEX_METADATA_BACKFILL_BATCH_DELAY_SECONDS` | Pausa entre lotes automáticos de backfill de metadados da Pokédex, para evitar um loop apertado de requisições à TCGdex | `0.5` |
+| `PRE_UPGRADE_BACKUP_ENABLED` | Cria um backup SQL automático antes das migrações de inicialização, quando uma instalação existente sobe em uma nova versão do app | `true` |
+| `PRE_UPGRADE_BACKUP_REQUIRED` | Interrompe a inicialização se o backup automático de pré-atualização falhar. Defina como `false` apenas se você tiver outro processo de backup verificado. | `true` |
+| `PRE_UPGRADE_BACKUP_KEEP` | Número de backups automáticos de pré-atualização a manter em `/app/backups`; mínimo `1` | `10` |
 
-Supported `TCGDEX_SYNC_LANGUAGES` codes: `en`, `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `de`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th`, `zh-cn`. The env value `all` expands to the full supported language list during first bootstrap.
+Códigos suportados em `TCGDEX_SYNC_LANGUAGES`: `en`, `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `de`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th`, `zh-cn`. O valor `all` se expande para a lista completa de idiomas suportados durante o bootstrap inicial.
 
-### Optional scanner diagnostics
+### Diagnóstico opcional do scanner
 
-Scanner diagnostics require both server and user consent:
+O diagnóstico do scanner exige consentimento do servidor e do usuário:
 
-1. The administrator sets `SCAN_TRACE_DIR=/app/data/scan-traces` and restarts the backend.
-2. A user enables **Settings → AI / Card Scanner → Share scanner diagnostics**. The toggle is off by default for every user.
+1. O administrador define `SCAN_TRACE_DIR=/app/data/scan-traces` e reinicia o backend.
+2. Um usuário habilita **Configurações → IA / Scanner de Cartas → Compartilhar diagnóstico do scanner**. O interruptor vem desligado por padrão para todo usuário.
 
-Only that user's subsequent scan attempts are stored. Each trace contains the sanitized card photo, generic Gemini prompt and raw text response, parsed fields and token usage, TCGdex searches, ranked candidates, pHash/visual decisions, and errors. API keys and authentication credentials are never recorded.
+Somente as tentativas de escaneamento subsequentes desse usuário são armazenadas. Cada trace contém a foto sanitizada da carta, a decisão final do scanner (correspondência por hash, hash+OCR, ou sem correspondência) e o candidato selecionado, além de eventuais erros. O scanner não usa nenhuma chave de API, e credenciais de autenticação nunca são registradas.
 
-Turning the toggle off stops future collection but deliberately retains existing diagnostics. There is no automatic expiry: files remain until the user presses the adjacent **Delete data** button or the account is deleted. Both actions remove only that user's stored trace JSON and photos. The stable `SCAN_TRACE_STORAGE_DIR` cleanup path keeps deletion available even while new collection is disabled. Files are created with private `0700` directory and `0600` file permissions and are not part of SQL backups.
+Desligar o interruptor interrompe a coleta futura, mas mantém deliberadamente os diagnósticos já existentes. Não há expiração automática: os arquivos permanecem até o usuário clicar no botão **Excluir dados** ao lado, ou até a conta ser excluída. Ambas as ações removem apenas o JSON de trace e as fotos armazenadas daquele usuário. O caminho estável `SCAN_TRACE_STORAGE_DIR` mantém a exclusão disponível mesmo enquanto a nova coleta está desabilitada. Os arquivos são criados com permissões privadas `0700` (diretório) e `0600` (arquivo) e não fazem parte dos backups SQL.
 
-To analyse consented traces inside the backend container:
+Para analisar traces consentidos dentro do container do backend:
 
 ```bash
 docker compose exec backend python scripts/analyse_scan_traces.py /app/data/scan-traces --field-nulls --failures
 ```
 
-English is used as the preferred fallback source for missing synced data, images, and prices when the same TCGdex card or set ID exists in English. Regional-only cards that do not exist in English are kept in their native language data instead of being guessed by name.
+O inglês é usado como fonte alternativa preferida para dados sincronizados, imagens e preços ausentes, quando a mesma carta ou set da TCGdex existe em inglês. Cartas exclusivas de uma região que não existem em inglês são mantidas em seus dados no idioma nativo, em vez de serem adivinhadas pelo nome.
 
-For Pokédex metadata only, full Pokémon card details can infer a missing TCGdex `dexId` from an exact English or German base species name. This covers cards like Mega Charizard / Mega-Glurak when TCGdex omits `dexId`, while avoiding non-Pokémon cards and unclear names.
+Apenas para metadados da Pokédex, os detalhes completos da carta podem inferir um `dexId` ausente da TCGdex a partir de um nome de espécie base exato em inglês ou alemão. Isso cobre cartas como Mega Charizard / Mega-Glurak quando a TCGdex omite o `dexId`, evitando cartas que não são de Pokémon e nomes ambíguos.
 
-The app UI language selector includes the supported TCGdex language set plus Swedish. The TCGdex sync-language selector controls card/set data sync only; changing the app UI language does not automatically sync additional card languages.
+O seletor de idioma da UI do app inclui o conjunto de idiomas suportados pela TCGdex, mais sueco. O seletor de idioma de sincronização da TCGdex controla apenas a sincronização de dados de carta/set; mudar o idioma da UI do app não sincroniza automaticamente outros idiomas de carta.
 
 ---
 
-## 🔄 Sync Behavior
+## 🔄 Comportamento de Sincronização
 
-PokéCollector has separate sync paths so frequent price updates stay lightweight while catalogue updates remain controlled.
+O PokéCollector tem caminhos de sincronização separados, para que atualizações de preço frequentes permaneçam leves enquanto atualizações de catálogo ficam controladas.
 
-| Sync | Where it runs | What it updates | Limits and schedule |
+| Sincronização | Onde roda | O que atualiza | Limites e agendamento |
 |------|---------------|-----------------|---------------------|
-| Small price sync | Home sync button and automatic price job | Prices for tracked cards in collections, wishlists, and binders | Runs every `30` minutes by default. Updates `max(1000, 75% of tracked unique cards)`, capped at `5000` cards per run. Missing-price cards are prioritized, but cards without public prices have a retry cooldown. |
-| Forced price sync | Settings `Sync prices only` action | Prices for all tracked collection, wishlist, and binder cards | Runs on demand. It is not capped like the small automatic batch and bypasses the no-price retry cooldown. It does not sync sets, discover new cards, or refresh card images. |
-| Full sync | Settings `Sync sets/cards` action and automatic full sync job | TCGdex set metadata, card lists, missing card details, tracked-card prices, pinned-set prices, custom-card matches, portfolio snapshots, and wishlist alerts | Runs every `5` days by default. The admin setting can change this to `1`, `2`, `3`, `5`, `7`, `14`, or `30` days. |
+| Sincronização leve de preços | Botão de sincronização na Home e job automático de preços | Preços das cartas rastreadas em coleções, wishlists e binders | Roda a cada `30` minutos por padrão. Atualiza `max(1000, 75% das cartas únicas rastreadas)`, com limite de `5000` cartas por execução. Cartas sem preço têm prioridade, mas cartas sem preço público têm um cooldown de nova tentativa. |
+| Sincronização forçada de preços | Ação `Sync prices only` em Configurações | Preços de todas as cartas rastreadas em coleção, wishlist e binders | Roda sob demanda. Não tem o limite do lote automático leve e ignora o cooldown de novas tentativas para cartas sem preço. Não sincroniza sets, não descobre novas cartas nem atualiza imagens de carta. |
+| Sincronização completa | Ação `Sync sets/cards` em Configurações e job automático de sincronização completa | Metadados de sets da TCGdex, listas de cartas, detalhes de cartas ausentes, preços de cartas rastreadas, preços de sets fixados, correspondências de cartas personalizadas, snapshots de portfólio e alertas de wishlist | Roda a cada `5` dias por padrão. A configuração de admin pode alterar isso para `1`, `2`, `3`, `5`, `7`, `14` ou `30` dias. |
 
-Full sync keeps heavier catalogue work bounded:
+A sincronização completa mantém o trabalho pesado de catálogo sob controle:
 
-- incomplete sets and fallback-language sets have their card lists refreshed every full sync
-- already-complete native sets are refreshed in a rotating batch of `25` sets per full sync, ordered by oldest set refresh time first
-- missing full-card metadata enrichment is capped separately at `2000` cards per full sync
-- normal price sync limits do not increase the full-card metadata cap
+- sets incompletos e sets em idioma de fallback têm suas listas de cartas atualizadas a cada sincronização completa
+- sets nativos já completos são atualizados em um lote rotativo de `25` sets por sincronização completa, ordenados pelo tempo de atualização mais antigo primeiro
+- o enriquecimento de metadados de cartas ausentes tem limite separado de `2000` cartas por sincronização completa
+- os limites normais de sincronização de preço não aumentam o limite de metadados de carta completa
 
-With the default `en,de` sync languages, the rotating complete-set refresh covers the current catalogue in roughly `70` days at the default `5` day full-sync interval. Manual full syncs also advance the rotation.
+Com os idiomas de sincronização padrão `en,de`, o lote rotativo de atualização de sets completos cobre o catálogo atual em aproximadamente `70` dias, no intervalo padrão de `5` dias entre sincronizações completas. Sincronizações completas manuais também avançam essa rotação.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Arquitetura
 
 ```text
 pokecollector/
 ├── backend/         # FastAPI + SQLAlchemy + PostgreSQL
-│   ├── api/         # Feature routers
-│   ├── services/    # Auth, sync, scheduler, Telegram, TCGdex integration
-│   ├── models.py    # ORM models
-│   ├── schemas.py   # Pydantic schemas
-│   └── database.py  # DB init and idempotent migrations
+│   ├── api/         # Roteadores de funcionalidades
+│   ├── services/    # Auth, sincronização, agendador, Telegram, integração TCGdex
+│   ├── models.py    # Modelos ORM
+│   ├── schemas.py   # Schemas Pydantic
+│   └── database.py  # Inicialização do banco e migrações idempotentes
 ├── frontend/        # React 18 + Vite + Tailwind CSS
 │   └── src/
 │       ├── pages/
@@ -370,186 +381,187 @@ pokecollector/
 └── docker-compose.yml
 ```
 
-The old nested `pokemon-tcg-collection/` layout is no longer used.
+O antigo layout aninhado `pokemon-tcg-collection/` não é mais usado.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Stack Tecnológica
 
-| Layer | Technology |
+| Camada | Tecnologia |
 |-------|-----------|
 | Frontend | React 18, Vite, Tailwind CSS, TanStack Query |
 | Backend | Python 3.11, FastAPI, SQLAlchemy, APScheduler, Pydantic |
-| Database | PostgreSQL 18 |
-| Card Data | [TCGdex](https://tcgdex.dev/) |
-| AI Scanner | Google Gemini, configurable via `GEMINI_MODEL` |
+| Banco de Dados | PostgreSQL 18 |
+| Dados de Cartas | [TCGdex](https://tcgdex.dev/) |
+| Scanner de Cartas | Pipeline local: OpenCV + hash perceptual (imagehash) + EasyOCR — sem API externa |
 | Deploy | Docker + Docker Compose |
 
 ---
 
-## 🌐 External Sources
+## 🌐 Fontes Externas
 
-PokéCollector is self-hosted, but it can call these external sources depending on enabled features and user actions:
+O PokéCollector é self-hosted, mas pode chamar estas fontes externas dependendo das funcionalidades habilitadas e das ações do usuário:
 
-| Source | Host(s) | Used for | When it is called |
+| Fonte | Host(s) | Usada para | Quando é chamada |
 |--------|---------|----------|-------------------|
-| TCGdex | `api.tcgdex.net`, `assets.tcgdex.net` | Set/card catalogue data, images, prices, localized card metadata, Pokédex `dexId`, and Cardmarket product metadata | Initial sync, manual/admin sync, search fallbacks, metadata backfills, and card image display |
-| PokeAPI sprites | `raw.githubusercontent.com/PokeAPI/sprites` | Profile/avatar GIFs, achievement badges, binder icons, National Pokédex sprites, and official artwork cache | Browser image display, Pokédex image cache misses, and `scripts.cache_pokedex_images` |
-| Google Gemini | `generativelanguage.googleapis.com` | AI card scanner recognition | Only when scanner recognition is used and `GEMINI_API_KEY` is configured |
-| Telegram Bot API | `api.telegram.org` | Telegram notifications and alerts | Only when Telegram settings are configured and an alert/notification is sent |
-| Frankfurter | `api.frankfurter.dev` | Currency exchange rates | Currency conversion and Telegram price formatting when non-EUR values are needed |
-| PokéCollector supporter registry | `pokecollector.romerg.de` | Strictly limited public supporter names, profile links, crowns, and aggregated support details | The self-hosted backend fetches the public registry when the Settings Community view is opened; there is no recurring polling |
-| GitHub | `api.github.com`, `raw.githubusercontent.com`, `avatars.githubusercontent.com`, `github.com` | Community contributor data, historic rescue-donation data, GitHub avatars, project links, and release/source links | Settings community section and linked project metadata |
-| Betterplace | `www.betterplace.org` | Direct animal-rescue donation campaign | Browser opens the outbound campaign link only; self-hosted instances do not call the Betterplace API |
-| Cardmarket | `www.cardmarket.com` | Product/search links for cards | Browser opens outbound links only; PokéCollector does not call a Cardmarket API |
+| TCGdex | `api.tcgdex.net`, `assets.tcgdex.net` | Dados de catálogo de sets/cartas, imagens, preços, metadados de carta localizados, `dexId` da Pokédex e metadados de produto do Cardmarket | Sincronização inicial, sincronização manual/admin, buscas alternativas, backfills de metadados e exibição de imagem de carta |
+| Sprites do PokeAPI | `raw.githubusercontent.com/PokeAPI/sprites` | GIFs de perfil/avatar, emblemas de conquistas, ícones de binder, sprites da Pokédex Nacional e cache de artes oficiais | Exibição de imagem no navegador, cache ausente de imagem da Pokédex e `scripts.cache_pokedex_images` |
+| Telegram Bot API | `api.telegram.org` | Notificações e alertas via Telegram | Apenas quando as configurações do Telegram estão definidas e um alerta/notificação é enviado |
+| Frankfurter | `api.frankfurter.dev` | Taxas de câmbio | Conversão de moeda e formatação de preço no Telegram quando valores fora de EUR são necessários |
+| Registro de apoiadores do PokéCollector | `pokecollector.romerg.de` | Nomes públicos de apoiadores estritamente limitados, links de perfil, coroas e detalhes agregados de apoio | O backend self-hosted busca o registro público quando a visão de Comunidade em Configurações é aberta; não há polling recorrente |
+| GitHub | `api.github.com`, `raw.githubusercontent.com`, `avatars.githubusercontent.com`, `github.com` | Dados de contribuidores da comunidade, dados históricos de doações de resgate, avatares do GitHub, links de projeto e links de release/código-fonte | Seção de comunidade em Configurações e metadados de projetos vinculados |
+| Betterplace | `www.betterplace.org` | Campanha de doação direta para resgate de animais | O navegador apenas abre o link externo da campanha; instâncias self-hosted não chamam a API da Betterplace |
+| Cardmarket | `www.cardmarket.com` | Links de produto/busca para cartas | O navegador apenas abre links externos; o PokéCollector não chama nenhuma API do Cardmarket |
 
-Build and dependency installation also contact package/distribution registries such as npm and the PostgreSQL apt repository when Docker images are built.
+O build e a instalação de dependências também contatam registros de pacotes/distribuição, como o npm e o repositório apt do PostgreSQL, quando as imagens Docker são construídas.
 
 ---
 
-## 📚 Documentation
+## 📚 Documentação
 
-| Doc | Description |
+| Doc | Descrição |
 |-----|-------------|
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contributor workflow and shared card-interface guidance |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System structure, data flow, contexts, settings model |
-| [`docs/BACKEND.md`](docs/BACKEND.md) | API routes, models, settings scoping, backup behavior |
-| [`docs/FRONTEND.md`](docs/FRONTEND.md) | Routes, pages, components, contexts, theming, i18n |
-| [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md) | Public card components, variants, gallery, and extension workflow |
-| [`docs/REVERSE_PROXY_AUTH.md`](docs/REVERSE_PROXY_AUTH.md) | Forward-auth exceptions for public profiles and binders |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Fluxo de trabalho para contribuidores e orientações da interface de carta compartilhada |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Estrutura do sistema, fluxo de dados, contexts, modelo de configurações |
+| [`docs/BACKEND.md`](docs/BACKEND.md) | Rotas da API, modelos, escopo de configurações, comportamento de backup |
+| [`docs/FRONTEND.md`](docs/FRONTEND.md) | Rotas, páginas, componentes, contexts, temas, i18n |
+| [`docs/CARD_SYSTEM.md`](docs/CARD_SYSTEM.md) | Componentes públicos de carta, variantes, galeria e fluxo de extensão |
+| [`docs/REVERSE_PROXY_AUTH.md`](docs/REVERSE_PROXY_AUTH.md) | Exceções de forward-auth para perfis e binders públicos |
+
+> **Nota:** os documentos técnicos acima ainda descrevem o mecanismo de reconhecimento antigo baseado em Gemini em alguns trechos — a atualização deles está pendente. O comportamento real do scanner é o descrito na seção [Sobre este fork](#-sobre-este-fork) e em `backend/services/card_scan_*.py`.
 
 ---
 
-## 🔧 Configuration Reference
+## 🔧 Referência de Configuração
 
-All settings are persisted in the database and edited in the Settings UI.
+Todas as configurações são persistidas no banco de dados e editadas na UI de Configurações.
 
-| Setting | Default | Notes |
+| Configuração | Padrão | Notas |
 |---------|---------|-------|
-| Language | `en` | App UI language. Options include `en`, `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `de`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th`, `zh-cn`, and `sv`. |
-| Currency | `EUR` | Per-user |
-| Primary Price | `trend` | Per-user. Options: `trend`, `avg`, `avg1`, `avg7`, `avg30`, `low` |
-| Multi-User Mode | `false` | Admin-only toggle |
-| TCGdex Sync Languages | `en,de` | Admin-only. Controls which TCGdex set/card languages full sync fetches. Extra languages increase sync time, API calls, and database size. |
-| Cross-language Price Fallback | `true` | Admin-only. Uses English exact-ID price data when the selected card language has no native public price data. |
-| Cross-language Image Fallback | `true` | Admin-only. Uses English exact-ID images when the selected card language has no native public image data. |
-| Debug Mode | `false` | Admin-only. Enables downloadable backend debug logging. |
-| Theme | `default` | Stored in browser local storage |
-| Price Sync Interval | `30` minutes | Admin-only |
-| Full Sync Interval | `5` days | Admin-only |
+| Idioma | `en` | Idioma da UI do app. Opções incluem `en`, `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `de`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th`, `zh-cn` e `sv`. |
+| Moeda | `EUR` | Por usuário |
+| Preço Primário | `trend` | Por usuário. Opções: `trend`, `avg`, `avg1`, `avg7`, `avg30`, `low` |
+| Modo Multiusuário | `false` | Interruptor restrito ao admin |
+| Idiomas de Sincronização TCGdex | `en,de` | Restrito ao admin. Controla quais idiomas de set/carta da TCGdex a sincronização completa busca. Idiomas extras aumentam o tempo de sincronização, as chamadas de API e o tamanho do banco. |
+| Fallback de Preço entre Idiomas | `true` | Restrito ao admin. Usa dados de preço em inglês pelo ID exato quando o idioma de carta selecionado não tem dados de preço público nativos. |
+| Fallback de Imagem entre Idiomas | `true` | Restrito ao admin. Usa imagens em inglês pelo ID exato quando o idioma de carta selecionado não tem dados de imagem público nativos. |
+| Modo Debug | `false` | Restrito ao admin. Habilita log de debug do backend para download. |
+| Tema | `default` | Armazenado no local storage do navegador |
+| Intervalo de Sincronização de Preço | `30` minutos | Restrito ao admin |
+| Intervalo de Sincronização Completa | `5` dias | Restrito ao admin |
 
-### Cardmarket price fields
+### Campos de preço do Cardmarket
 
-Card prices come from the TCGdex API's Cardmarket price data and are stored in EUR. The selected primary price controls collection totals, dashboard values, analytics, binders, social stats, exports, and alerts. Currency conversion is display-only when USD is selected.
+Os preços das cartas vêm dos dados de preço do Cardmarket na API da TCGdex e são armazenados em EUR. O preço primário selecionado controla totais de coleção, valores do dashboard, análises, binders, estatísticas sociais, exportações e alertas. A conversão de moeda é apenas para exibição quando USD está selecionado.
 
-| Option | Cardmarket field | Meaning |
+| Opção | Campo do Cardmarket | Significado |
 |--------|------------------|---------|
-| Trend | `trend` / `trend-holo` | Cardmarket trend price; closest available field to a current market value, but still an aggregated API value, not a live listing price. |
-| Average | `avg` / `avg-holo` | Cardmarket average sell price. This is stable and close to the historical app behavior. |
-| Avg 1 Day | `avg1` / `avg1-holo` | Average over the last day; very recent, but can be noisy when few sales exist. |
-| Avg 7 Days | `avg7` / `avg7-holo` | Average over the last seven days; smoother recent value. |
-| Avg 30 Days | `avg30` / `avg30-holo` | Average over the last 30 days; stable, slower to react. |
-| Low | `low` / `low-holo` | Lowest Cardmarket price; useful as a conservative value, often below realistic collection value. |
+| Trend | `trend` / `trend-holo` | Preço de tendência do Cardmarket; o campo disponível mais próximo de um valor de mercado atual, mas ainda um valor agregado da API, não um preço de anúncio ao vivo. |
+| Average | `avg` / `avg-holo` | Preço médio de venda no Cardmarket. É estável e próximo do comportamento histórico do app. |
+| Avg 1 Day | `avg1` / `avg1-holo` | Média do último dia; bem recente, mas pode ser ruidosa quando há poucas vendas. |
+| Avg 7 Days | `avg7` / `avg7-holo` | Média dos últimos sete dias; valor recente mais suavizado. |
+| Avg 30 Days | `avg30` / `avg30-holo` | Média dos últimos 30 dias; estável, reage mais devagar. |
+| Low | `low` / `low-holo` | Menor preço no Cardmarket; útil como valor conservador, muitas vezes abaixo do valor real de coleção. |
 
-For holo and reverse-holo collection items, PokéCollector uses the matching `*-holo` field when available. If TCGdex reports a holo price as `0` or missing, PokéCollector treats it as unavailable and falls back to the selected non-holo Cardmarket field, then to the Cardmarket average, instead of valuing the card at €0.
+Para itens de coleção holo e reverse-holo, o PokéCollector usa o campo `*-holo` correspondente quando disponível. Se a TCGdex reportar um preço holo como `0` ou ausente, o PokéCollector trata como indisponível e recorre ao campo Cardmarket não-holo selecionado, depois à média do Cardmarket, em vez de avaliar a carta em €0.
 
 ---
 
-## 🔄 Updating
+## 🔄 Atualizando
 
-PokéCollector has a built-in upgrade safety layer for existing installs: before startup migrations run on a new app version, the backend creates an automatic SQL backup in `./backups` by default. Startup stops if that automatic backup fails, unless you explicitly disable the requirement with `PRE_UPGRADE_BACKUP_REQUIRED=false`.
+O PokéCollector tem uma camada de segurança de upgrade embutida para instalações existentes: antes de rodar as migrações de inicialização em uma nova versão do app, o backend cria um backup SQL automático em `./backups` por padrão. A inicialização é interrompida se esse backup automático falhar, a menos que você desabilite explicitamente essa exigência com `PRE_UPGRADE_BACKUP_REQUIRED=false`.
 
-This automatic backup is still only a safety net. Keep creating your own manual backup before updates, especially before database major-version upgrades.
+Esse backup automático ainda é apenas uma rede de segurança. Continue fazendo seu próprio backup manual antes de atualizações, especialmente antes de upgrades de versão major do banco.
 
-### PostgreSQL 18 upgrade
+### Upgrade para PostgreSQL 18
 
-PokéCollector now uses PostgreSQL 18 for Docker installs. Existing Docker installs that still have a PostgreSQL 15 data volume must run the one-time upgrade script before recreating the database container with PostgreSQL 18. PostgreSQL cannot upgrade a major-version data directory just by changing the Docker image.
+O PokéCollector agora usa PostgreSQL 18 nas instalações via Docker. Instalações Docker existentes que ainda têm um volume de dados do PostgreSQL 15 precisam rodar o script de upgrade único antes de recriar o container do banco com PostgreSQL 18. O PostgreSQL não consegue atualizar um diretório de dados de versão major apenas trocando a imagem Docker.
 
-You do not need to install every intermediate PokéCollector app version first. Upgrade from your current PostgreSQL 15 install directly to this release: the script handles the database engine major-version upgrade, then the backend applies the app's cumulative startup migrations. Older installs that predate the recorded app-version setting are still treated as existing installs and backed up before those app migrations run.
+Você não precisa instalar todas as versões intermediárias do app antes. Atualize da sua instalação atual em PostgreSQL 15 diretamente para este release: o script cuida do upgrade de versão major do banco, e então o backend aplica as migrações cumulativas de inicialização do app. Instalações antigas anteriores ao registro de versão do app também são tratadas como instalações existentes e recebem backup antes dessas migrações.
 
-Create or verify a manual backup first while your current PostgreSQL 15 stack is still running:
+Primeiro, crie ou verifique um backup manual enquanto sua stack atual em PostgreSQL 15 ainda está rodando:
 
 ```bash
 docker compose exec postgres pg_dump -U pokemon pokemon_tcg > backup_$(date +%Y%m%d).sql
 ```
 
-Then pull the updated project files, but do not run the normal `docker compose up -d --build` command yet. Also do not run `docker compose down -v` or remove Docker volumes before the upgrade script finishes; that deletes the old database volume and leaves only your manual backup as the recovery path.
+Depois, baixe os arquivos atualizados do projeto, mas ainda não rode o comando normal `docker compose up -d --build`. Também não rode `docker compose down -v` nem remova volumes do Docker antes do script de upgrade terminar; isso apaga o volume antigo do banco e deixa apenas seu backup manual como caminho de recuperação.
 
 ```bash
 git pull
 ./scripts/upgrade-postgres-15-to-18.sh
 ```
 
-The script stops the app services to prevent writes during the dump, creates a SQL dump from PostgreSQL 15, keeps a rollback copy of the old PostgreSQL 15 Docker volume, initializes a fresh PostgreSQL 18 volume using the PostgreSQL 18 Docker image layout, restores the dump, and rebuilds/starts the stack again. It asks for confirmation before changing volumes.
+O script para os serviços do app para evitar escritas durante o dump, cria um dump SQL a partir do PostgreSQL 15, mantém uma cópia de rollback do volume Docker antigo do PostgreSQL 15, inicializa um volume novo do PostgreSQL 18 usando o layout da imagem Docker do PostgreSQL 18, restaura o dump, e reconstrói/inicia a stack novamente. Ele pede confirmação antes de alterar volumes.
 
-After the script restores PostgreSQL 18 and starts the app, the existing automatic pre-upgrade backup still runs before app startup migrations when the app version changes. That automatic backup is an extra safety net; the PostgreSQL 15 dump created by the script is the database major-version upgrade backup.
+Depois que o script restaura o PostgreSQL 18 e inicia o app, o backup automático de pré-atualização existente ainda roda antes das migrações de inicialização do app quando a versão do app muda. Esse backup automático é uma rede de segurança extra; o dump do PostgreSQL 15 criado pelo script é o backup do upgrade de versão major do banco.
 
-If you accidentally run `docker compose up -d --build` before the script, the PostgreSQL 18 container refuses to start when it detects old PostgreSQL data in the existing volume. Do not delete the volume. Run `./scripts/upgrade-postgres-15-to-18.sh`; if the original PostgreSQL 15 container was already stopped, the script can dump from the existing volume through a temporary PostgreSQL 15 container.
+Se você rodar `docker compose up -d --build` acidentalmente antes do script, o container do PostgreSQL 18 se recusa a iniciar ao detectar dados antigos do PostgreSQL no volume existente. Não apague o volume. Rode `./scripts/upgrade-postgres-15-to-18.sh`; se o container original do PostgreSQL 15 já estiver parado, o script pode extrair o dump do volume existente por meio de um container temporário do PostgreSQL 15.
 
-Fresh installs do not need this step. Existing installs only use the normal app update command below after this one-time PostgreSQL upgrade has completed.
+Instalações novas não precisam desse passo. Instalações existentes usam apenas o comando normal de atualização do app abaixo, depois que este upgrade único do PostgreSQL for concluído.
 
-### App updates
+### Atualizações do app
 
-PokéCollector creates an automatic SQL backup before startup migrations when an existing install starts on a new app version. This safety backup is there in case something goes wrong during an update or a migration breaks after a version change.
+O PokéCollector cria um backup SQL automático antes das migrações de inicialização, quando uma instalação existente sobe em uma nova versão do app. Esse backup de segurança existe para o caso de algo dar errado durante uma atualização, ou de uma migração quebrar depois de uma mudança de versão.
 
-Automatic backups are stored in the mounted backups folder:
+Os backups automáticos são armazenados na pasta de backups montada:
 
 ```text
-./backups/pre_upgrade_<old-version>_to_<new-version>_<timestamp>.sql
+./backups/pre_upgrade_<versao-antiga>_to_<versao-nova>_<timestamp>.sql
 ```
 
-By default, startup stops if this safety backup fails. This protects existing card collections before version migrations run.
+Por padrão, a inicialização é interrompida se esse backup de segurança falhar. Isso protege coleções de cartas existentes antes que as migrações de versão rodem.
 
-> **Important:** Always create your own manual backup before updating the application. The automatic pre-upgrade backup is an extra safety net, not a replacement for a verified backup you control.
+> **Importante:** Sempre crie seu próprio backup manual antes de atualizar a aplicação. O backup automático de pré-atualização é uma rede de segurança extra, não um substituto para um backup verificado sob seu controle.
 
 ```bash
 docker compose exec postgres pg_dump -U pokemon pokemon_tcg > backup_$(date +%Y%m%d).sql
 ```
 
-Then update:
+Depois, atualize:
 
 ```bash
 git pull
 docker compose up -d --build
 ```
 
-Database migrations run automatically on startup after the pre-upgrade backup succeeds. If you need to roll back, stop the app, switch back to the previous app version, and restore the matching SQL backup.
+As migrações de banco rodam automaticamente na inicialização, depois que o backup de pré-atualização é bem-sucedido. Se precisar reverter, pare o app, volte para a versão anterior do app e restaure o backup SQL correspondente.
 
 ---
 
-## 🌱 Community Projects
+## 🌱 Projetos da Comunidade
 
-PokéCollector is not only about the app itself. It is also about the ways collectors organize and use their collections in real life.
+O PokéCollector não é só sobre o app em si. É também sobre as formas como colecionadores organizam e usam suas coleções na vida real.
 
-Big shoutout to [f0rr3stfunk](https://github.com/f0rr3stfunk) for detailed testing, bug reports, feedback, and for sharing a very cool storage box divider project for Pokémon card sets.
+Um agradecimento especial a [f0rr3stfunk](https://github.com/f0rr3stfunk) pelos testes detalhados, relatos de bugs, feedback, e por compartilhar um projeto muito legal de divisórias de caixa de armazenamento para sets de cartas Pokémon.
 
-The dividers include set logos and space for NFC tags, so tapping a divider with a phone can open the matching set overview in PokéCollector.
+As divisórias incluem logos de set e espaço para tags NFC, então aproximar o celular de uma divisória pode abrir a visão do set correspondente no PokéCollector.
 
-Makerworld project:
+Projeto no Makerworld:
 https://makerworld.com/de/models/2816777-high-dividers-with-set-logo-nfc-tag#profileId-3136169
 
 ---
 
-## ❤️ Support
+## ❤️ Apoie o Projeto
 
-If you want to support PokéCollector, you can donate directly to animal rescue through the official campaign:
+Se você quiser apoiar o PokéCollector, pode doar diretamente para resgate de animais através da campanha oficial:
 
 https://pokecollector.romerg.de/#support
 
-Betterplace processes the donation and forwards it to the selected animal rescue project. PokéCollector never receives the funds.
+A Betterplace processa a doação e a repassa para o projeto de resgate de animais selecionado. O PokéCollector nunca recebe os fundos.
 
-To appear in the public supporter list, donate non-anonymously and begin the public Betterplace message with `POKECOLLECTOR: Your desired name`. The website's support section also includes a no-login manual review form. Published names can be corrected or removed by contacting [info@romerg.de](mailto:info@romerg.de).
+Para aparecer na lista pública de apoiadores, doe de forma não anônima e comece a mensagem pública da Betterplace com `POKECOLLECTOR: Seu nome desejado`. A seção de apoio do site também inclui um formulário de revisão manual sem login. Nomes publicados podem ser corrigidos ou removidos entrando em contato com [info@romerg.de](mailto:info@romerg.de).
 
-Approved supporter information is held in a private registry on the PokéCollector website server. It publishes only the versioned public projection at `https://pokecollector.romerg.de/api/v1/supporters`; pending entries, provider identifiers, suppression records, private request data, databases, and backups are never exposed. Each self-hosted PokéCollector backend validates that projection before returning it to its own browser. It keeps no persistent supporter cache and shows a temporary unavailable state instead of stale or GitHub-hosted data whenever the registry cannot be validated.
+As informações de apoiadores aprovadas ficam em um registro privado no servidor do site do PokéCollector. Ele publica apenas a projeção pública versionada em `https://pokecollector.romerg.de/api/v1/supporters`; entradas pendentes, identificadores de provedor, registros de supressão, dados privados de solicitação, bancos de dados e backups nunca são expostos. Cada backend self-hosted do PokéCollector valida essa projeção antes de devolvê-la ao próprio navegador. Ele não mantém cache persistente de apoiadores e mostra um estado temporário de indisponibilidade em vez de dados desatualizados ou hospedados no GitHub sempre que o registro não pode ser validado.
 
 <!-- rescue-donation-total:start -->
-**Historic animal-rescue donations forwarded before Betterplace:** €0.00
+**Doações históricas de resgate animal repassadas antes da Betterplace:** €0.00
 <!-- rescue-donation-total:end -->
 
-Historic transfers made before the direct Betterplace campaign remain tracked in `RESCUE_DONATIONS.csv`. After updating that CSV, run `node scripts/update-rescue-donation-total.mjs` to refresh this README total.
+Transferências históricas feitas antes da campanha direta na Betterplace continuam registradas em `RESCUE_DONATIONS.csv`. Depois de atualizar esse CSV, rode `node scripts/update-rescue-donation-total.mjs` para atualizar esse total no README.
 
 ---
 
-## 📝 License
+## 📝 Licença
 
 [GNU AGPLv3](LICENSE)
