@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, Check, HelpCircle, ImagePlus, Loader2, Trash2, Upload, X } from 'lucide-react'
+import { Camera, HelpCircle, ImagePlus, Loader2, Trash2, Upload, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { enqueueScanJob } from '../api/client'
@@ -76,7 +76,6 @@ export default function UnifiedCardScanner({ isOpen, onClose }) {
       id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
       file,
       previewUrl: URL.createObjectURL(file),
-      individual: false,
     }))
     setStagedFiles(current => [...current, ...additions])
   }
@@ -121,28 +120,11 @@ export default function UnifiedCardScanner({ isOpen, onClose }) {
     }
   }
 
-  const toggleIndividual = id => {
-    setStagedFiles(current => current.map(item => (
-      item.id === id ? { ...item, individual: !item.individual } : item
-    )))
-  }
-
-  const allIndividual = stagedFiles.length > 0 && stagedFiles.every(item => item.individual)
-  const toggleAllIndividual = () => {
-    setStagedFiles(current => current.map(item => ({ ...item, individual: !allIndividual })))
-  }
-
   const startScanning = async () => {
     if (!stagedFiles.length || submitting) return
     setSubmitting(true)
     try {
-      const individualPositions = stagedFiles
-        .map((item, position) => item.individual ? position : null)
-        .filter(position => position !== null)
-      const job = await enqueueScanJob(
-        stagedFiles.map(item => item.file),
-        individualPositions,
-      )
+      const job = await enqueueScanJob(stagedFiles.map(item => item.file))
       clearFiles()
       onClose?.()
       navigate(`/scans/${job.id}`)
@@ -224,20 +206,6 @@ export default function UnifiedCardScanner({ isOpen, onClose }) {
                       <X size={13} />
                     </button>
                   </div>
-                  {stagedFiles.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => toggleIndividual(item.id)}
-                      className={`flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-[9px] font-semibold transition-colors ${
-                        item.individual
-                          ? 'border-brand-red/50 bg-brand-red/20 text-brand-red'
-                          : 'border-white/10 bg-white/5 text-text-muted'
-                      }`}
-                    >
-                      {item.individual && <Check size={10} />}
-                      <span>{t('scanner.scanIndividually')}</span>
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -308,17 +276,6 @@ export default function UnifiedCardScanner({ isOpen, onClose }) {
               <span>{t('scanner.chooseFromGallery')}</span>
             </button>
           </div>
-
-          {stagedFiles.length > 1 && (
-            <button
-              type="button"
-              onClick={toggleAllIndividual}
-              className="btn-ghost flex w-full items-center justify-center gap-2"
-            >
-              {allIndividual ? <ImagePlus size={16} /> : <Check size={16} />}
-              <span>{allIndividual ? t('scanner.useAutomaticGrouping') : t('scanner.scanAllIndividually')}</span>
-            </button>
-          )}
 
           <button
             type="button"

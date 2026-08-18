@@ -1192,9 +1192,6 @@ const de = {
     dailyQuotaRetry: 'Tageslimit erreicht · {countdown}',
     dailyQuotaWaiting: 'Tageslimit erreicht · Wartet auf erneuten Versuch…',
     retryIndividually: 'Einzeln erneut versuchen',
-    scanIndividually: 'Einzeln scannen',
-    scanAllIndividually: 'Alle einzeln scannen',
-    useAutomaticGrouping: 'Automatische Gruppierung verwenden',
   },
 
   // Language filter / card language

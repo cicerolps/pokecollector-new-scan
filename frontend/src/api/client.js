@@ -118,11 +118,11 @@ export const recognizeCard = (imageFile) => {
   }).then(r => r.data)
 }
 
-// Persistent background card-scan queue.
-export const enqueueScanJob = (files = [], individualPositions = []) => {
+// Persistent background card-scan queue. Every photo is recognized
+// individually — the backend has no composite/grouped recognition mode.
+export const enqueueScanJob = (files = []) => {
   const formData = new FormData()
   files.forEach(file => formData.append('files', file))
-  formData.append('individual_positions', JSON.stringify(individualPositions))
   return api.post('/cards/recognize/jobs', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(r => r.data)
