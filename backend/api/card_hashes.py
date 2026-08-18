@@ -15,10 +15,11 @@ def get_card_hash_backfill_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Coverage and running state for the scanner's hash bank. Admin only,
-    same as the sync status endpoint it sits next to."""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Coverage and running state for the scanner's hash bank. Any
+    authenticated user can read this (same as /api/sync/status) — it's the
+    reason a scan of a very recently synced card can come back "no match",
+    so the scanner UI shows it to everyone, not just admins. Triggering a
+    backfill (below) stays admin-only."""
     return {
         "is_running": is_running(),
         "last_result": last_result(),

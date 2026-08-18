@@ -1176,6 +1176,8 @@ const de = {
     useSelectedMatch: 'Treffer verwenden',
     noMatches: 'Keine Treffer gefunden',
     noMatchTip: 'Tipp: Bessere Beleuchtung und scharfes Foto hilft',
+    hashCoverageTitle: 'Erkennungsdatenbank zu {percent}% bereit',
+    hashCoverageDesc: '{missing} von {total} Karten werden noch im Hintergrund indiziert. Falls eine sehr kürzlich hinzugefügte Karte noch nicht erkannt wird, sollte das in Kürze klappen.',
     scanAgain: 'Nochmal scannen',
     purchasePriceLabel: 'Kaufpreis (optional)',
     addToCollection: 'Zur Sammlung hinzufügen',

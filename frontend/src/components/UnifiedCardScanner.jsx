@@ -8,6 +8,7 @@ import { useSettings } from '../contexts/SettingsContext'
 import { isSupportedScannerImage, SCANNER_IMAGE_ACCEPT } from '../utils/scannerImages'
 import ConfirmDialog from './ui/ConfirmDialog'
 import Modal from './ui/Modal'
+import HashCoverageBanner from './HashCoverageBanner'
 
 
 function PhotoPositionGuide({ title, description }) {
@@ -146,6 +147,7 @@ export default function UnifiedCardScanner({ isOpen, onClose }) {
       >
         <div className="space-y-4 p-4 sm:p-5">
           <p className="text-sm text-text-secondary">{t('scanner.subtitle')}</p>
+          {isOpen && <HashCoverageBanner />}
           <input
             ref={cameraRef}
             type="file"

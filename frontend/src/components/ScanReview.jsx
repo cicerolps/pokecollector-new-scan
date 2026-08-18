@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Camera, Loader2, Maximize2, RefreshCw, Trash2 } from 'lucide-react'
 import { fetchScanJobItemImage } from '../api/client'
 import { CardDisplay } from './card-system'
+import HashCoverageBanner from './HashCoverageBanner'
 import Modal from './ui/Modal'
 import { tcgdexLanguageLabel } from '../utils/tcgdexLanguages'
 import { formatRetryCountdown } from '../utils/retryCountdown'
@@ -172,6 +173,7 @@ export function ScanItemPanel({ jobId, item, onAdd, onRetry, onDismiss, onModalC
               }`}>
                 {item.error || t(noMatches ? 'scanner.noMatches' : 'scanner.recognitionFailed')}
               </p>
+              {noMatches && <HashCoverageBanner />}
               <button type="button" onClick={() => onRetry(item)} disabled={!item.has_image}
                 className="btn-secondary justify-center">
                 <RefreshCw size={14} /> {t('scanner.retryIndividually')}
