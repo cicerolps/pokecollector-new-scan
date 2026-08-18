@@ -1,0 +1,10 @@
+[Unit]
+Description=Poke Collector v2 - catalog/hash sync (PROJECT_SPEC.md 4.1)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Adjust this path if the deployment moves.
+WorkingDirectory=/media/NewHDD/rommapp/pokecollector-new-scan/poke-collector-v2
+ExecStart=/usr/bin/docker compose exec -T poke-collector-v2 python -m app.jobs.sync_catalog --all

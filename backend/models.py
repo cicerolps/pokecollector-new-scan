@@ -156,6 +156,28 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
 
 
+class CardHash(Base):
+    """Perceptual hashes of a catalogue card's reference image.
+
+    Local, deterministic scan replacement for the Gemini-based recognizer
+    (see backend/services/card_recognition_*.py): the photo's own hashes are
+    compared against this table instead of asking an LLM what the card is.
+    One row per Card.id, so it naturally follows the same composite
+    {tcg_card_id}_{lang} keying the catalogue already uses — a German and an
+    English printing of the same card get independent rows, even when they
+    happen to hash close to each other.
+    """
+    __tablename__ = "card_hashes"
+
+    card_id = Column(String, ForeignKey("cards.id", ondelete="CASCADE"), primary_key=True)
+    phash = Column(String)
+    dhash = Column(String)
+    whash = Column(String)
+    hashed_at = Column(DateTime, default=func.now())
+
+    card = relationship("Card")
+
+
 class CollectionItem(Base):
     __tablename__ = "collection"
 
@@ -616,19 +638,3 @@ class ScanQueueUserState(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     last_dispatched_at = Column(DateTime, nullable=True, index=True)
-
-
-class GeminiQuotaState(Base):
-    """Cross-worker pacing state keyed by a non-reversible API-key fingerprint."""
-
-    __tablename__ = "gemini_quota_state"
-
-    key_fingerprint = Column(String, primary_key=True)
-    tokens = Column(Float, nullable=True)
-    last_refill_at = Column(DateTime, nullable=True)
-    next_request_at = Column(DateTime, nullable=True, index=True)
-    blocked_until = Column(DateTime, nullable=True)
-    blocked_reason = Column(String, nullable=True)
-    consecutive_daily_failures = Column(Integer, default=0, nullable=False)
-    interactive_pending_until = Column(DateTime, nullable=True)
-    updated_at = Column(DateTime, default=func.now(), nullable=False)

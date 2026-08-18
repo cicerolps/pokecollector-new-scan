@@ -109,7 +109,7 @@ export const deleteCustomCard = (cardId) => api.delete(`/cards/custom/${cardId}`
 export const getCustomCards = () => api.get('/cards/custom')
 export const cloneCustomCard = (cardId) => api.post(`/cards/custom/${cardId}/clone`).then(r => r.data)
 
-// Card recognition via Gemini Vision
+// Card recognition via the local hash+OCR scanner
 export const recognizeCard = (imageFile) => {
   const formData = new FormData()
   formData.append('file', imageFile)

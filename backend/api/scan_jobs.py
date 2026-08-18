@@ -91,14 +91,7 @@ async def enqueue_scan_job(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Sanitize a batch, persist it, and return without waiting for Gemini."""
-    from api.recognize import get_gemini_key
-
-    if not get_gemini_key(db, user_id=current_user.id):
-        raise HTTPException(
-            status_code=400,
-            detail="No Gemini API key configured. Add one in Settings first.",
-        )
+    """Sanitize a batch, persist it, and return without waiting for recognition."""
     try:
         requested_individual = json.loads(individual_positions or "[]")
         if (
@@ -111,11 +104,12 @@ async def enqueue_scan_job(
     except (TypeError, ValueError, json.JSONDecodeError):
         raise HTTPException(status_code=400, detail="Invalid individual scan selection.")
 
-    individual_set = set(requested_individual)
-    batch_modes = [
-        len(files) > 1 and position not in individual_set
-        for position in range(len(files))
-    ]
+    # Composite (grid) recognition needed an LLM to read multiple cards out
+    # of one combined image and has no local-scanner equivalent — every
+    # item is processed as its own independent single-card scan now.
+    # individual_positions/requested_individual is kept accepted (rather
+    # than rejected) so older frontend builds that still send it don't 400.
+    batch_modes = [False for _ in range(len(files))]
     try:
         job = await create_scan_job(
             db,

@@ -392,8 +392,6 @@ export default function Settings() {
   const { theme, setTheme, themes } = useTheme()
   const [activeTab, setActiveTab] = useState('general')
 
-  const [geminiKey, setGeminiKey] = useState('')
-  const [geminiDirty, setGeminiDirty] = useState(false)
   const [backupOptions, setBackupOptions] = useState(['full'])
   const [debugModeEnabled, setDebugModeEnabled] = useState(false)
   const [scanDiagnosticsSaving, setScanDiagnosticsSaving] = useState(false)
@@ -449,11 +447,6 @@ export default function Settings() {
   const { data: alertThresholdData } = useQuery({
     queryKey: ['setting', 'price_alert_threshold'],
     queryFn: () => getSetting('price_alert_threshold').catch(() => ({ value: '10' })),
-  })
-
-  const { data: geminiKeyData } = useQuery({
-    queryKey: ['setting', 'gemini_api_key'],
-    queryFn: () => getSetting('gemini_api_key').catch(() => ({ value: '' })),
   })
 
   // Public profile
@@ -524,10 +517,6 @@ export default function Settings() {
   useEffect(() => {
     if (alertThresholdData?.value) setAlertThreshold(alertThresholdData.value)
   }, [alertThresholdData])
-
-  useEffect(() => {
-    if (geminiKeyData?.value !== undefined && !geminiDirty) setGeminiKey(geminiKeyData.value)
-  }, [geminiKeyData])
 
   useEffect(() => {
     setDebugModeEnabled(settings.debug_mode === 'true')
@@ -1187,34 +1176,6 @@ export default function Settings() {
           <section className="space-y-1">
             <SectionHeader title={t('settings.sectionAI')} />
             <SettingsCard>
-              <SettingsRow label={t('settings.geminiApiKey')} description={t('settings.geminiApiKeyDesc')}>
-                <div className="flex items-center gap-2 w-full mt-2">
-                  <input
-                    type={geminiDirty ? "text" : "password"}
-                    value={geminiKey}
-                    onChange={e => { setGeminiKey(e.target.value); setGeminiDirty(true) }}
-                    placeholder="AIza..."
-                    className="input flex-1 text-xs font-mono"
-                    style={{ minWidth: 0 }}
-                  />
-                  {geminiKey && !geminiDirty && (
-                    <span className="text-xs text-green flex-shrink-0">✅</span>
-                  )}
-                  {geminiDirty && (
-                    <button
-                      onClick={async () => {
-                        await saveSetting('gemini_api_key', geminiKey)
-                        setGeminiDirty(false)
-                        queryClient.invalidateQueries({ queryKey: ['setting', 'gemini_api_key'] })
-                        toast.success(t('settings.apiKeySaved'))
-                      }}
-                      className="btn-primary-sm flex-shrink-0"
-                    >
-                      {t('common.save')}
-                    </button>
-                  )}
-                </div>
-              </SettingsRow>
               <SettingsRow
                 label={t('settings.scanDiagnostics')}
                 description={scanDiagnosticsAvailable

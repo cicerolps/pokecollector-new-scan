@@ -502,21 +502,6 @@ def _run_migrations(conn):
             user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             last_dispatched_at TIMESTAMP
         )""",
-        """CREATE TABLE IF NOT EXISTS gemini_quota_state (
-            key_fingerprint VARCHAR PRIMARY KEY,
-            tokens DOUBLE PRECISION,
-            last_refill_at TIMESTAMP,
-            next_request_at TIMESTAMP,
-            blocked_until TIMESTAMP,
-            blocked_reason VARCHAR,
-            consecutive_daily_failures INTEGER NOT NULL DEFAULT 0,
-            interactive_pending_until TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )""",
-        "ALTER TABLE gemini_quota_state ADD COLUMN IF NOT EXISTS tokens DOUBLE PRECISION",
-        "ALTER TABLE gemini_quota_state ADD COLUMN IF NOT EXISTS last_refill_at TIMESTAMP",
-        "ALTER TABLE gemini_quota_state ADD COLUMN IF NOT EXISTS blocked_reason VARCHAR",
-        "ALTER TABLE gemini_quota_state ADD COLUMN IF NOT EXISTS consecutive_daily_failures INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE scan_job_items ADD COLUMN IF NOT EXISTS batch_mode BOOLEAN NOT NULL DEFAULT FALSE",
         "ALTER TABLE scan_job_items ADD COLUMN IF NOT EXISTS retry_reason VARCHAR",
         "CREATE INDEX IF NOT EXISTS ix_scan_jobs_user_id ON scan_jobs(user_id)",
@@ -533,7 +518,6 @@ def _run_migrations(conn):
         """CREATE INDEX IF NOT EXISTS ix_scan_job_items_dispatch
            ON scan_job_items(status, next_attempt_at, lease_expires_at, user_id)""",
         "CREATE INDEX IF NOT EXISTS ix_scan_queue_user_state_last_dispatched_at ON scan_queue_user_state(last_dispatched_at)",
-        "CREATE INDEX IF NOT EXISTS ix_gemini_quota_state_next_request_at ON gemini_quota_state(next_request_at)",
         # v59: User-owned manual cards and copy-only shared templates.
         "ALTER TABLE cards ADD COLUMN IF NOT EXISTS custom_owner_id INTEGER",
         "ALTER TABLE cards ADD COLUMN IF NOT EXISTS is_shared_template BOOLEAN NOT NULL DEFAULT FALSE",
@@ -987,7 +971,7 @@ def init_db():
                 "language", "currency", "price_primary", "price_display",
                 "telegram_bot_token", "telegram_chat_id", "telegram_enabled",
                 "price_alerts_enabled", "price_alert_threshold",
-                "gemini_api_key", "trainer_name", "portfolio_display_mode",
+                "trainer_name", "portfolio_display_mode",
             }
             for key in per_user_keys:
                 existing_user_setting = db.query(UserSetting).filter(
@@ -1004,10 +988,6 @@ def init_db():
                         db.add(UserSetting(user_id=admin.id, key=key, value=val))
                 elif key == "telegram_chat_id":
                     val = os.environ.get("TELEGRAM_CHAT_ID", "")
-                    if val:
-                        db.add(UserSetting(user_id=admin.id, key=key, value=val))
-                elif key == "gemini_api_key":
-                    val = os.environ.get("GEMINI_API_KEY", "")
                     if val:
                         db.add(UserSetting(user_id=admin.id, key=key, value=val))
             db.commit()
