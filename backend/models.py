@@ -638,19 +638,3 @@ class ScanQueueUserState(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     last_dispatched_at = Column(DateTime, nullable=True, index=True)
-
-
-class GeminiQuotaState(Base):
-    """Cross-worker pacing state keyed by a non-reversible API-key fingerprint."""
-
-    __tablename__ = "gemini_quota_state"
-
-    key_fingerprint = Column(String, primary_key=True)
-    tokens = Column(Float, nullable=True)
-    last_refill_at = Column(DateTime, nullable=True)
-    next_request_at = Column(DateTime, nullable=True, index=True)
-    blocked_until = Column(DateTime, nullable=True)
-    blocked_reason = Column(String, nullable=True)
-    consecutive_daily_failures = Column(Integer, default=0, nullable=False)
-    interactive_pending_until = Column(DateTime, nullable=True)
-    updated_at = Column(DateTime, default=func.now(), nullable=False)
