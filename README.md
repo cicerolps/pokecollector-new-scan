@@ -18,9 +18,9 @@ Seja gentil. Seja claro. Presuma boa intenção. Mantenha o feedback construtivo
 - 👤 **Criador original:** [Gilles Romer](https://romerg.de/)
 - ✉️ **Contato do projeto original:** [info@romerg.de](mailto:info@romerg.de)
 
-![Version](https://img.shields.io/badge/version-v1.40.0-e3000b?style=flat-square) ![Dark Theme](https://img.shields.io/badge/theme-dark-1a1a2e?style=flat-square) ![TCGdex](https://img.shields.io/badge/card%20data-TCGdex-e3000b?style=flat-square) ![Docker](https://img.shields.io/badge/deploy-Docker-2496ed?style=flat-square) ![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?style=flat-square) ![React](https://img.shields.io/badge/frontend-React%2018-61dafb?style=flat-square) [![Support animal rescue](https://img.shields.io/badge/support-animal%20rescue-e3000b?style=flat-square)](https://pokecollector.romerg.de/#support)
+![Version](https://img.shields.io/badge/version-v1.41.0-e3000b?style=flat-square) ![Dark Theme](https://img.shields.io/badge/theme-dark-1a1a2e?style=flat-square) ![TCGdex](https://img.shields.io/badge/card%20data-TCGdex-e3000b?style=flat-square) ![Docker](https://img.shields.io/badge/deploy-Docker-2496ed?style=flat-square) ![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?style=flat-square) ![React](https://img.shields.io/badge/frontend-React%2018-61dafb?style=flat-square) [![Support animal rescue](https://img.shields.io/badge/support-animal%20rescue-e3000b?style=flat-square)](https://pokecollector.romerg.de/#support)
 
-**Versão atual:** `v1.40.0` · Os lançamentos deste fork são acompanhados na [página de Releases do GitHub](https://github.com/cicerolps/pokecollector-new-scan/releases).
+**Versão atual:** `v1.41.0` · Os lançamentos deste fork são acompanhados na [página de Releases do GitHub](https://github.com/cicerolps/pokecollector-new-scan/releases).
 
 ![Prévia do WebApp](preview-homescreen.png)
 
@@ -311,6 +311,7 @@ Se você já está trancado para fora do modo multiusuário, defina `USER_MODE=s
 | `PRE_UPGRADE_BACKUP_ENABLED` | Cria um backup SQL automático antes das migrações de inicialização, quando uma instalação existente sobe em uma nova versão do app | `true` |
 | `PRE_UPGRADE_BACKUP_REQUIRED` | Interrompe a inicialização se o backup automático de pré-atualização falhar. Defina como `false` apenas se você tiver outro processo de backup verificado. | `true` |
 | `PRE_UPGRADE_BACKUP_KEEP` | Número de backups automáticos de pré-atualização a manter em `/app/backups`; mínimo `1` | `10` |
+| `CARD_HASH_BACKFILL_BATCH_LIMIT` | Quantas cartas o backfill automático de hashes do scanner processa por execução agendada. O intervalo entre execuções é configurável em Configurações (padrão `15` minutos), não por variável de ambiente. | `300` |
 
 Códigos suportados em `TCGDEX_SYNC_LANGUAGES`: `en`, `fr`, `es`, `es-mx`, `it`, `pt`, `pt-br`, `pt-pt`, `de`, `nl`, `pl`, `ru`, `ja`, `ko`, `zh-tw`, `id`, `th`, `zh-cn`. O valor `all` se expande para a lista completa de idiomas suportados durante o bootstrap inicial.
 
@@ -447,6 +448,7 @@ Todas as configurações são persistidas no banco de dados e editadas na UI de 
 | Tema | `default` | Armazenado no local storage do navegador |
 | Intervalo de Sincronização de Preço | `30` minutos | Restrito ao admin |
 | Intervalo de Sincronização Completa | `5` dias | Restrito ao admin |
+| Intervalo de Backfill de Hash das Cartas | `15` minutos | Restrito ao admin. Controla a frequência do backfill incremental automático do banco de hashes do scanner (`card_hashes`). |
 
 ### Campos de preço do Cardmarket
 

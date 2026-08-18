@@ -68,7 +68,8 @@ def _refuse_dedicated_setting(key: str) -> None:
 
 
 ADMIN_ONLY_KEYS = {
-    "full_sync_interval_days", "price_sync_interval_minutes", "multi_user_mode",
+    "full_sync_interval_days", "price_sync_interval_minutes",
+    "card_hash_backfill_interval_minutes", "multi_user_mode",
     "tcgdex_sync_languages", "debug_mode",
     "cross_language_price_fallback", "cross_language_image_fallback",
     DIGITAL_SETS_SETTING_KEY,
@@ -79,6 +80,7 @@ DEFAULT_SETTINGS = {
     "trainer_name": "TRAINER",
     "full_sync_interval_days": "5",
     "price_sync_interval_minutes": "30",
+    "card_hash_backfill_interval_minutes": "15",
     "telegram_enabled": "false",
     "telegram_chat_id": "",
     "price_alerts_enabled": "false",

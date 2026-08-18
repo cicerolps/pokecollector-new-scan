@@ -132,6 +132,9 @@ Cartas personalizadas pertencem a exatamente um usuário. Donos podem publicar u
 | POST | `/api/sync/reschedule-full` | Reagenda a sincronização completa |
 | POST | `/api/sync/reschedule-prices` | Reagenda a sincronização de preços |
 | GET | `/api/sync/status` | Status e histórico de sincronização |
+| GET | `/api/card-hashes/status` | Cobertura do banco de hashes do scanner (total/hasheadas/faltando) e se um backfill está rodando, restrito ao admin |
+| POST | `/api/card-hashes/backfill` | Dispara um backfill de hashes em segundo plano; `{"force": false}` para incremental, `{"force": true}` para recalcular tudo, restrito ao admin |
+| POST | `/api/card-hashes/reschedule` | Reagenda o backfill automático de hashes, restrito ao admin |
 | GET | `/api/images/card/{card_id}/{size}` | Proxy/cache de imagem de carta |
 | GET | `/api/images/set/{set_id}/{image_type}` | Proxy/cache de logo/símbolo de set |
 | GET | `/api/settings/` | Configurações efetivas do usuário atual |
@@ -162,7 +165,7 @@ Cartas personalizadas pertencem a exatamente um usuário. Donos podem publicar u
 
 - Chave estrangeira para `Card.id`
 - Armazena os três hashes perceptuais (`phash`, `dhash`, `whash`) calculados a partir da imagem oficial da carta
-- Populado por `backend/scripts/backfill_card_hashes.py`; precisa ser reexecutado depois de qualquer sincronização que adicione cartas novas
+- Populado automaticamente por `services/card_hash_backfill.py`, agendado em `services/scheduler.py` (incremental, em lotes, a cada `card_hash_backfill_interval_minutes`); `backend/scripts/backfill_card_hashes.py` continua disponível para uso manual (`--force` para recalcular tudo, `--limit` para um teste rápido)
 - Consultado por `backend/services/card_scan_hash.py` a cada tentativa de escaneamento
 
 ### `CollectionItem`
@@ -220,6 +223,7 @@ As configurações atuais são divididas em `backend/api/settings.py`:
 - `ADMIN_ONLY_KEYS`
   - `full_sync_interval_days`
   - `price_sync_interval_minutes`
+  - `card_hash_backfill_interval_minutes`
   - `multi_user_mode`
   - `tcgdex_sync_languages`
   - `debug_mode`

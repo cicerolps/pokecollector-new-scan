@@ -9,6 +9,8 @@ scheduler = BackgroundScheduler()
 
 _DEFAULT_FULL_SYNC_DAYS = 5
 _DEFAULT_PRICE_SYNC_MINUTES = 30
+_DEFAULT_CARD_HASH_BACKFILL_MINUTES = 15
+_DEFAULT_CARD_HASH_BACKFILL_BATCH_LIMIT = 300
 
 
 def _get_full_sync_interval_days() -> int:
@@ -37,6 +39,32 @@ def _get_price_sync_interval_minutes() -> int:
     except Exception:
         pass
     return _DEFAULT_PRICE_SYNC_MINUTES
+
+
+def _get_card_hash_backfill_interval_minutes() -> int:
+    """Read card-hash backfill interval from DB settings."""
+    try:
+        from database import SessionLocal
+        from models import Setting
+        with SessionLocal() as db:
+            row = db.query(Setting).filter(Setting.key == "card_hash_backfill_interval_minutes").first()
+            if row:
+                return int(row.value)
+    except Exception:
+        pass
+    return _DEFAULT_CARD_HASH_BACKFILL_MINUTES
+
+
+def _get_card_hash_backfill_batch_limit() -> int:
+    """Read the per-run card-hash backfill batch size from the environment."""
+    import os
+    raw = os.environ.get("CARD_HASH_BACKFILL_BATCH_LIMIT")
+    if not raw:
+        return _DEFAULT_CARD_HASH_BACKFILL_BATCH_LIMIT
+    try:
+        return max(int(raw), 1)
+    except ValueError:
+        return _DEFAULT_CARD_HASH_BACKFILL_BATCH_LIMIT
 
 
 def run_full_sync():
@@ -69,6 +97,28 @@ def run_price_sync():
         logger.error(f"Scheduled price sync failed: {e}")
     finally:
         db.close()
+
+
+def run_card_hash_backfill():
+    """Incremental card-hash backfill — hashes cards the scanner can't yet
+    recognize (new ones from the last sync, or ones a previous run missed),
+    in a bounded batch so this tick never blocks the scheduler for long."""
+    from services.card_hash_backfill import is_running, run_backfill
+
+    if is_running():
+        return
+    try:
+        batch_limit = _get_card_hash_backfill_batch_limit()
+        stats = run_backfill(force=False, limit=batch_limit)
+        if stats and stats["seen"]:
+            logger.info(
+                "Scheduled card-hash backfill: %s/%s hashed, %s failed",
+                stats["hashed"],
+                stats["seen"],
+                stats["failed"],
+            )
+    except Exception:
+        logger.exception("Scheduled card-hash backfill failed")
 
 
 def run_scan_queue_maintenance():
@@ -178,6 +228,7 @@ def start_scheduler():
 
         full_interval_days = _get_full_sync_interval_days()
         price_interval_minutes = _get_price_sync_interval_minutes()
+        card_hash_backfill_interval_minutes = _get_card_hash_backfill_interval_minutes()
 
         # Job 1: Full sync (sets + cards + tracked prices)
         full_next_run = now_utc if needs_initial_sync else now_utc + datetime.timedelta(days=full_interval_days)
@@ -209,6 +260,18 @@ def start_scheduler():
             next_run_time=now_utc + datetime.timedelta(seconds=45),
         )
 
+        # Job: incremental card-hash backfill (scanner hash bank). Delayed
+        # past the maintenance job's first tick so a fresh install's initial
+        # full sync gets a head start before the first batch runs.
+        scheduler.add_job(
+            run_card_hash_backfill,
+            trigger=IntervalTrigger(minutes=card_hash_backfill_interval_minutes),
+            id="card_hash_backfill_job",
+            name="Card Hash Backfill",
+            replace_existing=True,
+            next_run_time=now_utc + datetime.timedelta(minutes=2),
+        )
+
         if needs_pokedex_backfill:
             scheduler.add_job(
                 run_pokedex_metadata_backfill,
@@ -222,7 +285,8 @@ def start_scheduler():
         logger.info(
             f"Scheduler started — full sync every {full_interval_days} days "
             f"({'immediately' if needs_initial_sync else f'in {full_interval_days} days'}), "
-            f"small price sync every {price_interval_minutes} minutes"
+            f"small price sync every {price_interval_minutes} minutes, "
+            f"card-hash backfill every {card_hash_backfill_interval_minutes} minutes"
             f"{', one-time Pokédex metadata backfill scheduled' if needs_pokedex_backfill else ''}"
         )
     else:
@@ -254,3 +318,13 @@ def reschedule_price_sync(interval_minutes: int):
             trigger=IntervalTrigger(minutes=interval_minutes),
         )
         logger.info(f"Price sync rescheduled to every {interval_minutes} minutes")
+
+
+def reschedule_card_hash_backfill(interval_minutes: int):
+    """Reschedule the card-hash backfill job with a new interval."""
+    if scheduler.running:
+        scheduler.reschedule_job(
+            "card_hash_backfill_job",
+            trigger=IntervalTrigger(minutes=interval_minutes),
+        )
+        logger.info(f"Card-hash backfill rescheduled to every {interval_minutes} minutes")

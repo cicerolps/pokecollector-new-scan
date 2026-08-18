@@ -279,6 +279,12 @@ export const getSyncStatus = () => api.get('/sync/status')
 export const rescheduleFullSync = (intervalDays) => api.post('/sync/reschedule-full', { interval_days: intervalDays })
 export const reschedulePriceSync = (intervalMinutes) => api.post('/sync/reschedule-prices', { interval_minutes: intervalMinutes })
 
+// Scanner hash bank (card_hashes) — local recognition needs this populated
+// per card; the scheduler keeps it topped up incrementally on its own.
+export const getCardHashBackfillStatus = () => api.get('/card-hashes/status')
+export const triggerCardHashBackfill = (force = false) => api.post('/card-hashes/backfill', { force })
+export const rescheduleCardHashBackfill = (intervalMinutes) => api.post('/card-hashes/reschedule', { interval_minutes: intervalMinutes })
+
 // Products
 export const getProducts = (params = {}) => api.get('/products/', { params })
 export const getProductTypes = () => api.get('/products/types')
