@@ -39,7 +39,7 @@ PER_USER_KEYS = {
     "set_overview_filters", "hidden_set_ids",
     "telegram_bot_token", "telegram_chat_id", "telegram_enabled",
     "price_alerts_enabled", "price_alert_threshold",
-    "gemini_api_key", "trainer_name", "portfolio_display_mode",
+    "trainer_name", "portfolio_display_mode",
     SCAN_DIAGNOSTICS_SETTING_KEY, PHOTO_PREFERENCE_SETTING_KEY,
 }
 
@@ -169,11 +169,6 @@ def _get_user_settings(db: Session, user_id: int) -> dict:
             env_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
             if env_chat_id:
                 result["telegram_chat_id"] = env_chat_id
-        if "gemini_api_key" not in result:
-            env_gemini = os.environ.get("GEMINI_API_KEY", "")
-            if env_gemini:
-                result["gemini_api_key"] = env_gemini
-
     for key, value in DEFAULT_SETTINGS.items():
         result.setdefault(key, value)
     result["scan_diagnostics_available"] = "true" if trace_available() else "false"

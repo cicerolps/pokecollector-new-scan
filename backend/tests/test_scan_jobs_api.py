@@ -69,8 +69,7 @@ class ScanJobsApiTests(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def _enqueue(self):
-        with patch("api.recognize.get_gemini_key", return_value="secret-key"), \
-                patch("api.scan_jobs.drain_scan_queue", new=AsyncMock(return_value=0)):
+        with patch("api.scan_jobs.drain_scan_queue", new=AsyncMock(return_value=0)):
             response = self.client.post(
                 "/api/cards/recognize/jobs",
                 files={"files": ("private-name.jpg", _jpeg_bytes(), "image/jpeg")},
@@ -136,8 +135,7 @@ class ScanJobsApiTests(unittest.TestCase):
         )
 
     def test_enqueue_preserves_order_and_individual_choices(self):
-        with patch("api.recognize.get_gemini_key", return_value="secret-key"), \
-                patch("api.scan_jobs.drain_scan_queue", new=AsyncMock(return_value=0)):
+        with patch("api.scan_jobs.drain_scan_queue", new=AsyncMock(return_value=0)):
             response = self.client.post(
                 "/api/cards/recognize/jobs",
                 data={"individual_positions": "[1]"},
@@ -151,7 +149,10 @@ class ScanJobsApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         items = self.db.query(ScanJobItem).order_by(ScanJobItem.position).all()
         self.assertEqual([item.position for item in items], [0, 1, 2])
-        self.assertEqual([item.batch_mode for item in items], [True, False, True])
+        # Composite (grid) recognition is gone — every item is scanned
+        # individually now regardless of individual_positions, which is
+        # still accepted so older frontend builds sending it don't 400.
+        self.assertEqual([item.batch_mode for item in items], [False, False, False])
 
     def test_single_photo_is_always_individual(self):
         created = self._enqueue()

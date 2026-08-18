@@ -76,7 +76,6 @@ def run_scan_queue_maintenance():
     import asyncio
 
     from database import SessionLocal
-    from services.gemini_rate_limit import purge_stale_quota_states
     from services.scan_queue import (
         drain_scan_queue,
         purge_expired_scan_jobs,
@@ -89,16 +88,13 @@ def run_scan_queue_maintenance():
         recovered = recover_expired_leases(db)
         removed = purge_expired_scan_jobs(db)
         orphans = purge_orphaned_scan_directories(db)
-        stale_quotas = purge_stale_quota_states()
-        if recovered or removed or orphans or stale_quotas:
+        if recovered or removed or orphans:
             logger.info(
                 "Scan queue maintenance recovered %s lease(s), expired %s job(s), "
-                "removed %s orphaned upload directory/directories, and purged %s "
-                "inactive Gemini quota state(s)",
+                "and removed %s orphaned upload directory/directories",
                 recovered,
                 removed,
                 orphans,
-                stale_quotas,
             )
     except Exception:
         db.rollback()

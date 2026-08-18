@@ -987,7 +987,7 @@ def init_db():
                 "language", "currency", "price_primary", "price_display",
                 "telegram_bot_token", "telegram_chat_id", "telegram_enabled",
                 "price_alerts_enabled", "price_alert_threshold",
-                "gemini_api_key", "trainer_name", "portfolio_display_mode",
+                "trainer_name", "portfolio_display_mode",
             }
             for key in per_user_keys:
                 existing_user_setting = db.query(UserSetting).filter(
@@ -1004,10 +1004,6 @@ def init_db():
                         db.add(UserSetting(user_id=admin.id, key=key, value=val))
                 elif key == "telegram_chat_id":
                     val = os.environ.get("TELEGRAM_CHAT_ID", "")
-                    if val:
-                        db.add(UserSetting(user_id=admin.id, key=key, value=val))
-                elif key == "gemini_api_key":
-                    val = os.environ.get("GEMINI_API_KEY", "")
                     if val:
                         db.add(UserSetting(user_id=admin.id, key=key, value=val))
             db.commit()
