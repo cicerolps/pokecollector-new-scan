@@ -18,9 +18,9 @@ Seja gentil. Seja claro. Presuma boa intenção. Mantenha o feedback construtivo
 - 👤 **Criador original:** [Gilles Romer](https://romerg.de/)
 - ✉️ **Contato do projeto original:** [info@romerg.de](mailto:info@romerg.de)
 
-![Version](https://img.shields.io/badge/version-v1.41.0-e3000b?style=flat-square) ![Dark Theme](https://img.shields.io/badge/theme-dark-1a1a2e?style=flat-square) ![TCGdex](https://img.shields.io/badge/card%20data-TCGdex-e3000b?style=flat-square) ![Docker](https://img.shields.io/badge/deploy-Docker-2496ed?style=flat-square) ![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?style=flat-square) ![React](https://img.shields.io/badge/frontend-React%2018-61dafb?style=flat-square) [![Support animal rescue](https://img.shields.io/badge/support-animal%20rescue-e3000b?style=flat-square)](https://pokecollector.romerg.de/#support)
+![Version](https://img.shields.io/badge/version-v1.42.0-e3000b?style=flat-square) ![Dark Theme](https://img.shields.io/badge/theme-dark-1a1a2e?style=flat-square) ![TCGdex](https://img.shields.io/badge/card%20data-TCGdex-e3000b?style=flat-square) ![Docker](https://img.shields.io/badge/deploy-Docker-2496ed?style=flat-square) ![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?style=flat-square) ![React](https://img.shields.io/badge/frontend-React%2018-61dafb?style=flat-square) [![Support animal rescue](https://img.shields.io/badge/support-animal%20rescue-e3000b?style=flat-square)](https://pokecollector.romerg.de/#support)
 
-**Versão atual:** `v1.41.0` · Os lançamentos deste fork são acompanhados na [página de Releases do GitHub](https://github.com/cicerolps/pokecollector-new-scan/releases).
+**Versão atual:** `v1.42.0` · Os lançamentos deste fork são acompanhados na [página de Releases do GitHub](https://github.com/cicerolps/pokecollector-new-scan/releases).
 
 ![Prévia do WebApp](preview-homescreen.png)
 
@@ -37,7 +37,7 @@ Este repositório é um fork do [PokéCollector](https://github.com/Git-Romer/po
 | Depende de serviço externo para reconhecer a carta? | Sim | Não |
 | Escaneamento composto (várias cartas em uma foto) | Sim | Não por enquanto (removido — ainda não existe um equivalente local) |
 
-Na prática: a foto é recortada e normalizada com OpenCV, comparada por hash perceptual (phash/dhash/whash) contra um banco de hashes gerado a partir do catálogo já sincronizado, e o número impresso na carta (lido via EasyOCR) desempata os casos ambíguos. Tudo roda no seu próprio servidor, sem chamada de rede para reconhecer a carta.
+Na prática: a foto é recortada e normalizada com OpenCV, comparada por hash perceptual (phash/dhash/whash) contra um banco de hashes gerado a partir do catálogo já sincronizado, e o EasyOCR lê o número de coleção, o nome, o ilustrador e o código do set direto da carta para filtrar e desempatar os candidatos deterministicamente antes do hash entrar como critério final. Tudo roda no seu próprio servidor, sem chamada de rede para reconhecer a carta.
 
 O restante deste documento descreve a aplicação como um todo — a grande maioria dela é idêntica ao projeto original.
 
@@ -77,9 +77,9 @@ O restante deste documento descreve a aplicação como um todo — a grande maio
 - Busque no banco de cartas cacheado localmente por nome, set, tipo, raridade, HP, artista e mais
 - Busca por código curto, como `PFL 001`
 - Seleção múltipla nos resultados de busca e adição em lote à coleção
-- Scanner persistente com reconhecimento 100% local: OpenCV recorta e normaliza a foto, hash perceptual (phash/dhash/whash) identifica a carta comparando com o catálogo, e OCR (EasyOCR) confere o número impresso para desempatar casos ambíguos — sem API externa, sem chave, sem limite de uso
+- Scanner persistente com reconhecimento 100% local: OpenCV recorta e normaliza a foto, hash perceptual (phash/dhash/whash) gera uma lista de candidatos a partir do catálogo, e EasyOCR lê número de coleção, nome, ilustrador e código do set direto da carta para filtrar e desempatar os candidatos deterministicamente — sem API externa, sem chave, sem limite de uso
 - Fila de escaneamento persistente e resistente a reinícios, com caixa de revisão, expiração em 14 dias e novas tentativas automáticas
-- Correspondência determinística prioriza número local, total impresso, código do set, marca de regulamentação, artista e HP
+- Correspondência determinística: um número de coleção incompatível exclui um candidato; nome, ilustrador e código do set compatíveis somam pontos a favor; a distância de hash desempata o que sobra
 - Captura nativa por câmera e galeria, com guia de posicionamento opcional; fotos na fila são sanitizadas e apagadas após confirmação ou descarte
 - O scanner remove sufixos como `ex` / `GX` / `VSTAR` para ampliar a correspondência
 - Diagnóstico opcional do scanner (com consentimento) para instalações que habilitam `SCAN_TRACE_DIR`; desativado por usuário por padrão, com ação de exclusão separada
@@ -322,7 +322,7 @@ O diagnóstico do scanner exige consentimento do servidor e do usuário:
 1. O administrador define `SCAN_TRACE_DIR=/app/data/scan-traces` e reinicia o backend.
 2. Um usuário habilita **Configurações → IA / Scanner de Cartas → Compartilhar diagnóstico do scanner**. O interruptor vem desligado por padrão para todo usuário.
 
-Somente as tentativas de escaneamento subsequentes desse usuário são armazenadas. Cada trace contém a foto sanitizada da carta, a decisão final do scanner (correspondência por hash, hash+OCR, ou sem correspondência) e o candidato selecionado, além de eventuais erros. O scanner não usa nenhuma chave de API, e credenciais de autenticação nunca são registradas.
+Somente as tentativas de escaneamento subsequentes desse usuário são armazenadas. Cada trace contém a foto sanitizada da carta, a decisão final do scanner (correspondência por hash, hash+campos OCR, ou sem correspondência) e o candidato selecionado, além de eventuais erros. O scanner não usa nenhuma chave de API, e credenciais de autenticação nunca são registradas.
 
 Desligar o interruptor interrompe a coleta futura, mas mantém deliberadamente os diagnósticos já existentes. Não há expiração automática: os arquivos permanecem até o usuário clicar no botão **Excluir dados** ao lado, ou até a conta ser excluída. Ambas as ações removem apenas o JSON de trace e as fotos armazenadas daquele usuário. O caminho estável `SCAN_TRACE_STORAGE_DIR` mantém a exclusão disponível mesmo enquanto a nova coleta está desabilitada. Os arquivos são criados com permissões privadas `0700` (diretório) e `0600` (arquivo) e não fazem parte dos backups SQL.
 

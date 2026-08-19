@@ -24,9 +24,13 @@ from services.card_scan_preprocess import four_rotations
 MatchStatus = Literal["confident", "ambiguous", "no_match"]
 
 # Candidate #1 is accepted directly when its combined Hamming distance is at
-# least this much lower than candidate #2's; otherwise OCR disambiguation
-# kicks in. Below HASH_NO_MATCH_DISTANCE for candidate #1, treat as no match.
-HASH_MATCH_TOP_N = int(os.environ.get("SCAN_HASH_TOP_N", "5"))
+# least this much lower than candidate #2's; otherwise field-based scoring
+# (see card_scan_resolver.py) narrows and re-ranks the pool below. Below
+# HASH_NO_MATCH_DISTANCE for candidate #1, treat as no match. Wider than a
+# pure-hash setup would need, since OCR'd fields need a real pool of
+# candidates to filter — a too-narrow top N can exclude the right card
+# before fields ever get a chance to promote it.
+HASH_MATCH_TOP_N = int(os.environ.get("SCAN_HASH_TOP_N", "10"))
 HASH_CONFIDENCE_GAP = int(os.environ.get("SCAN_HASH_CONFIDENCE_GAP", "10"))
 HASH_NO_MATCH_DISTANCE = int(os.environ.get("SCAN_HASH_NO_MATCH_DISTANCE", "60"))
 

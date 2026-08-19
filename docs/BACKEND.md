@@ -310,25 +310,24 @@ O reconhecimento roda inteiramente no backend, sem chamada a nenhuma API externa
 
 1. Os uploads são JPEGs limitados em tamanho, sanitizados, normalizados de orientação, com metadados removidos.
 2. `backend/services/card_scan_preprocess.py` localiza os quatro cantos da carta (rejeitando contornos sem formato de carta), aplica correção de perspectiva e normaliza a iluminação com CLAHE. Sem contorno confiável, a imagem inteira é usada como fallback.
-3. `backend/services/card_scan_hash.py` calcula phash/dhash/whash (via `imagehash`) para a imagem normalizada — testando as quatro rotações — e busca os candidatos mais próximos em `card_hashes` por distância de Hamming combinada.
-4. A confiança da correspondência é avaliada como `confident`, `ambiguous` ou `no_match`, com base na distância do melhor candidato e no gap para o segundo colocado (`SCAN_HASH_TOP_N`, `SCAN_HASH_CONFIDENCE_GAP`, `SCAN_HASH_NO_MATCH_DISTANCE`).
-5. Quando ambíguo, `backend/services/card_scan_ocr.py` recorta a região do número da carta e usa EasyOCR para ler o número local e o total impresso do set, desempatando entre os candidatos.
-6. Cada foto é processada individualmente — não há mais agrupamento composto de várias cartas por foto (removido junto com o Gemini; sem equivalente local ainda).
-7. Os resultados da fila continuam revisáveis após reinícios. Confirmar/descartar um item apaga sua foto na fila; jobs não revisados expiram após 14 dias.
+3. `backend/services/card_scan_hash.py` calcula phash/dhash/whash (via `imagehash`) para a imagem normalizada — testando as quatro rotações — e busca os `SCAN_HASH_TOP_N` candidatos mais próximos (padrão `10`) em `card_hashes` por distância de Hamming combinada. Além de `SCAN_HASH_NO_MATCH_DISTANCE`, já é `no_match`.
+4. `backend/services/card_scan_ocr.py` lê, na mesma imagem, o número/total de coleção, o ilustrador, um possível código de set e o nome da carta — cada campo é independente e opcional.
+5. `backend/services/card_scan_resolver.py` (`score_candidate`) usa esses campos para filtrar e reordenar os candidatos do hash: número de coleção incompatível **exclui** o candidato; nome, ilustrador e código de set compatíveis **somam pontos**, sem nunca excluir sozinhos. A distância de hash desempata quando os campos não decidem — inclusive quando o OCR não lê nada útil, caindo de volta no comportamento só-por-hash.
+6. A confiança final é `confident` quando resta um único candidato, quando os campos decidem sozinhos (`hash_fields`), ou quando o hash desempata com folga suficiente (`SCAN_HASH_CONFIDENCE_GAP`, decisão `hash`); caso contrário, `ambiguous`.
+7. Cada foto é processada individualmente — não há mais agrupamento composto de várias cartas por foto (removido junto com o Gemini; sem equivalente local ainda).
+8. Os resultados da fila continuam revisáveis após reinícios. Confirmar/descartar um item apaga sua foto na fila; jobs não revisados expiram após 14 dias.
 
 Tratamento de erro:
 
 - Falhas transitórias de processamento (imagem corrompida, decodificação falha) são reportadas com uma mensagem clara para o usuário
 - Retentativas usam backoff genérico — não há mais lógica de cota, chave de API, ou limite de taxa de provedor externo, porque não existe mais provedor externo
-- Os nomes de sufixo de carta como `EX`, `GX`, `V`, `VMAX`, `VSTAR`, `TAG TEAM`, `BREAK` e `LV.X` são removidos antes da busca por número
-- A busca pode recorrer do idioma detectado da carta para o inglês
 - O payload de resultado inclui os metadados reconhecidos e as cartas candidatas
 
 ### Diagnóstico do scanner
 
 `backend/services/scan_trace.py` fica desabilitado a menos que `SCAN_TRACE_DIR` aponte para um armazenamento que o backend possa criar e escrever. A disponibilidade sozinha não coleta dados: cada usuário precisa habilitar com `scan_diagnostics_enabled=true`, que vem desligado por padrão. `SCAN_TRACE_STORAGE_DIR` é o local estável de limpeza; o Docker Compose padrão o mantém em `/app/data/scan-traces` mesmo quando a nova coleta está desabilitada.
 
-Para tentativas com consentimento, um trace JSON por usuário e um JPEG sanitizado são armazenados. Os traces contêm a foto sanitizada, a decisão final do scanner (correspondência por hash, hash+OCR, ou sem correspondência) e o candidato selecionado, além de eventuais erros. Nenhuma chave de API é usada pelo scanner, e credenciais de autenticação nunca são registradas.
+Para tentativas com consentimento, um trace JSON por usuário e um JPEG sanitizado são armazenados. Os traces contêm a foto sanitizada, a decisão final do scanner (correspondência por hash, hash+campos OCR, ou sem correspondência) e o candidato selecionado, além de eventuais erros. Nenhuma chave de API é usada pelo scanner, e credenciais de autenticação nunca são registradas.
 
 Quando um candidato enfileirado é confirmado, o id da carta na TCGdex rotula todas as tentativas armazenadas daquele item de job como verdade de referência (ground truth). `backend/scripts/analyse_scan_traces.py` reporta a acurácia top-1 e detalhes opcionais de campos nulos/falhas.
 
