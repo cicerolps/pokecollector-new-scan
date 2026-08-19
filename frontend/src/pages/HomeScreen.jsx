@@ -67,6 +67,28 @@ function CardThumb({ card, onClick }) {
   )
 }
 
+// ── Card thumbnail with a one-line caption (rarity, set, etc.) ─────────────────
+function CaptionedCardThumb({ card, caption, captionColor = '#f5c842', onClick }) {
+  return (
+    <div className="w-[110px] flex-shrink-0 cursor-pointer group" onClick={onClick}>
+      <CollectionCardDisplay
+        variant="artwork"
+        item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
+        card={card}
+        alt={card.name}
+        variantEffectSource={card.variant}
+        interactive
+        stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
+      />
+      {caption && (
+        <p className="text-[10px] font-bold mt-1 truncate" style={{ color: captionColor }}>
+          {caption}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function ProductValueInfo({ label, detailsLabel, explanation }) {
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
@@ -209,6 +231,8 @@ export default function HomeScreen() {
 
   const recentCards = data?.recent_additions?.slice(0, 12) ?? []
   const topCards = data?.top_cards?.slice(0, 8) ?? []
+  const rarestCards = data?.rarest_cards?.slice(0, 10) ?? []
+  const oldestSetCards = data?.oldest_set_cards?.slice(0, 10) ?? []
 
   const openCollectionItem = (card) => navigate(collectionItemTargetUrl(card))
 
@@ -353,6 +377,74 @@ export default function HomeScreen() {
             </div>
           ))}
         </div>
+
+        {(recentCards.length > 0 || rarestCards.length > 0 || oldestSetCards.length > 0 || topCards.length > 0) && (
+          <CardLegend
+            legendProps={{
+              showWishlist: false,
+            }}
+          />
+        )}
+
+        {/* ── RECENTLY ADDED ── */}
+        {recentCards.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.recentlyAdded')}</p>
+              <button onClick={() => navigate('/collection')}
+                className="text-[11px] font-semibold hover:opacity-80 transition-opacity"
+                style={{ color:'#e3000b' }}>{t('home.viewAll')} →</button>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
+              {recentCards.map(card => (
+                <CardThumb key={card.id} card={card} onClick={() => openCollectionItem(card)} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── RAREST CARDS ── */}
+        {rarestCards.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.rarestCards')}</p>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
+              {rarestCards.map(card => (
+                <CaptionedCardThumb
+                  key={card.collection_item_id || card.id}
+                  card={card}
+                  caption={card.rarity}
+                  captionColor="#ce93d8"
+                  onClick={() => openCollectionItem(card)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── OLDEST SETS ── */}
+        {oldestSetCards.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.oldestSets')}</p>
+              <button onClick={() => navigate('/sets')}
+                className="text-[11px] font-semibold hover:opacity-80 transition-opacity"
+                style={{ color:'#81c784' }}>{t('home.viewAll')} →</button>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
+              {oldestSetCards.map(card => (
+                <CaptionedCardThumb
+                  key={card.collection_item_id || card.id}
+                  card={card}
+                  caption={card.set_name}
+                  captionColor="#81c784"
+                  onClick={() => openCollectionItem(card)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── NAVIGATION PORTAL GRID (collection & cataloguing first) ── */}
         <div>
@@ -558,31 +650,6 @@ export default function HomeScreen() {
             )}
           </div>
         </div>
-
-        {(recentCards.length > 0 || topCards.length > 0) && (
-          <CardLegend
-            legendProps={{
-              showWishlist: false,
-            }}
-          />
-        )}
-
-        {/* ── RECENTLY ADDED ── */}
-        {recentCards.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.recentlyAdded')}</p>
-              <button onClick={() => navigate('/collection')}
-                className="text-[11px] font-semibold hover:opacity-80 transition-opacity"
-                style={{ color:'#e3000b' }}>{t('home.viewAll')} →</button>
-            </div>
-            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
-              {recentCards.map(card => (
-                <CardThumb key={card.id} card={card} onClick={() => openCollectionItem(card)} />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* ── TOP VALUABLE CARDS ── */}
         {topCards.length > 0 && (

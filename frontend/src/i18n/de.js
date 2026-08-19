@@ -181,6 +181,8 @@ const de = {
     recentlyAdded: 'Zuletzt hinzugefügt',
     viewAll: 'Alle',
     topCards: 'Wertvollste Karten',
+    rarestCards: 'Seltenste Karten',
+    oldestSets: 'Aus deinen ältesten Sets',
     details: 'Details',
     sync: 'Sync',
     syncing: 'Syncing…',
