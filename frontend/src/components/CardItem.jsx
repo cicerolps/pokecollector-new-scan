@@ -15,7 +15,7 @@ import { CARD_VARIANTS, getAvailableVariants, getDefaultVariant } from '../utils
 import MoneyInput from './MoneyInput'
 import { getEffectiveCardPrice } from '../utils/prices'
 import { tcgdexLanguageLabel } from '../utils/tcgdexLanguages'
-import TcgdexLanguageSelect from './TcgdexLanguageSelect'
+import CollectionLanguagePicker from './CollectionLanguagePicker'
 import { invalidateCardState, invalidateTcgdexFilterLanguages } from '../utils/queryInvalidation'
 import { parseMoneyInputValue } from '../utils/moneyInput'
 import { cardmarketLinks } from '../utils/cardmarket'
@@ -1074,7 +1074,7 @@ export function CardModal({ card, onClose, onEdit, defaultLang = 'en', ownedItem
               )}
               <div>
                 <label className="text-xs text-text-muted mb-1.5 block">🌐 {t('lang.selectLabel')}</label>
-                <TcgdexLanguageSelect value={collectionLang} onChange={setCollectionLang} className="select w-full" />
+                <CollectionLanguagePicker value={collectionLang} onChange={setCollectionLang} />
               </div>
               <div>
                 <label className="text-xs text-text-muted mb-1 block">{t('card.purchasePrice')}</label>

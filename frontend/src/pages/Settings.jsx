@@ -19,6 +19,7 @@ import { useSettings } from '../contexts/SettingsContext'
 import { useConfirmDialog } from '../contexts/ConfirmDialogContext'
 import Modal from '../components/ui/Modal'
 import AvatarPicker from '../components/AvatarPicker'
+import TcgdexLanguageSelect from '../components/TcgdexLanguageSelect'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
 import { TCGDEX_LANGUAGES, normalizeTcgdexLanguageCsv, tcgdexLanguageLabel } from '../utils/tcgdexLanguages'
@@ -719,6 +720,24 @@ export default function Settings() {
     }
   }
 
+  const handleCollectionLanguagePrimaryChange = async (val) => {
+    try {
+      await updateSettings({ collection_language_primary: val })
+      toast.success(t('settings.saved'))
+    } catch {
+      toast.error(t('settings.saveFailed'))
+    }
+  }
+
+  const handleCollectionLanguageShortlistChange = async (csv) => {
+    try {
+      await updateSettings({ collection_language_shortlist: csv })
+      toast.success(t('settings.saved'))
+    } catch {
+      toast.error(t('settings.saveFailed'))
+    }
+  }
+
   const handlePriceTypeChange = async (val) => {
     try {
       await updateSettings({ price_primary: val })
@@ -1197,6 +1216,21 @@ export default function Settings() {
                     { value: 'low', label: t('settings.priceLow') },
                   ]}
                   onChange={handlePriceTypeChange}
+                />
+              </SettingsRow>
+              <SettingsRow label={t('settings.collectionLanguagePrimary')} description={t('settings.collectionLanguagePrimaryDesc')}>
+                <TcgdexLanguageSelect
+                  value={settings.collection_language_primary || settings.language || 'en'}
+                  onChange={handleCollectionLanguagePrimaryChange}
+                  className="select"
+                />
+              </SettingsRow>
+              <SettingsRow label={t('settings.collectionLanguageShortlist')} description={t('settings.collectionLanguageShortlistDesc')}>
+                <TcgdexLanguageControl
+                  value={settings.collection_language_shortlist}
+                  onChange={handleCollectionLanguageShortlistChange}
+                  selectedLabel={t('settings.tcgdexSyncLanguagesSelected')}
+                  fallbackNote={t('settings.collectionLanguageShortlistNote')}
                 />
               </SettingsRow>
               <SettingsRow

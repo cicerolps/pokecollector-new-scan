@@ -40,6 +40,7 @@ PER_USER_KEYS = {
     "telegram_bot_token", "telegram_chat_id", "telegram_enabled",
     "price_alerts_enabled", "price_alert_threshold",
     "trainer_name", "portfolio_display_mode",
+    "collection_language_primary", "collection_language_shortlist",
     SCAN_DIAGNOSTICS_SETTING_KEY, PHOTO_PREFERENCE_SETTING_KEY,
 }
 
@@ -92,6 +93,8 @@ DEFAULT_SETTINGS = {
     "price_display": '["trend", "avg", "avg1", "avg7", "avg30", "low"]',
     "set_overview_filters": "{}",
     "hidden_set_ids": "[]",
+    "collection_language_primary": "",
+    "collection_language_shortlist": "",
     "tcgdex_sync_languages": "en,de",
     DIGITAL_SETS_SETTING_KEY: "true",
     "cross_language_price_fallback": "true",

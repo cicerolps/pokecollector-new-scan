@@ -220,6 +220,8 @@ As configurações atuais são divididas em `backend/api/settings.py`:
   - `price_alert_threshold`
   - `scan_diagnostics_enabled`
   - `trainer_name`
+  - `collection_language_primary`
+  - `collection_language_shortlist`
 - `ADMIN_ONLY_KEYS`
   - `full_sync_interval_days`
   - `price_sync_interval_minutes`
