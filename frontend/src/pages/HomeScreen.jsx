@@ -318,9 +318,8 @@ export default function HomeScreen() {
           )}
         </div>
 
-        {/* ── PORTFOLIO VALUE (large, prominent) ── */}
+        {/* ── GREETING ── */}
         <div className="text-center -mt-2">
-          {/* Trainer greeting */}
           <div className="mb-1 flex items-center justify-center gap-2 truncate max-w-[90vw] mx-auto">
             {user?.avatar_id ? (
               <img
@@ -333,107 +332,9 @@ export default function HomeScreen() {
               {t('home.hello')}, <span className="font-black" style={{ color: '#f5c842' }}>{trainerName}</span>! 👋
             </p>
           </div>
-          <div
-            className="mx-auto mb-3 grid w-full max-w-[320px] grid-cols-2 rounded-xl p-1"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-            aria-label={t('home.portfolioDisplayMode')}
-          >
-            {[
-              ['portfolio_value', t('home.portfolioValue')],
-              ['capital_invested', t('home.capitalInvested')],
-            ].map(([mode, label]) => {
-              const selected = portfolioDisplayMode === mode
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => setPortfolioDisplayMode(mode)}
-                  className="min-w-0 rounded-lg px-2 py-2 text-[10px] font-bold leading-tight transition-all sm:text-xs"
-                  style={{
-                    background: selected ? 'rgba(245,200,66,0.14)' : 'transparent',
-                    border: selected ? '1px solid rgba(245,200,66,0.28)' : '1px solid transparent',
-                    color: selected ? '#f5c842' : 'rgba(255,255,255,0.45)',
-                  }}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-          <div className="relative mb-2 flex w-full items-center justify-center gap-1.5">
-            {showingPortfolioValue && productValueExplanation ? (
-              <ProductValueInfo
-                label={headlineLabel}
-                detailsLabel={t('home.details')}
-                explanation={productValueExplanation}
-              />
-            ) : (
-              <p className="text-[11px] text-text-muted uppercase tracking-[0.2em]">{headlineLabel}</p>
-            )}
-          </div>
-          {isLoading ? (
-            <div className="skeleton h-14 w-48 mx-auto rounded-xl" />
-          ) : (
-            <p className="text-4xl sm:text-5xl font-black tracking-tight"
-              style={{
-                color: showingPortfolioValue ? '#f5c842' : '#4fc3f7',
-                textShadow: showingPortfolioValue
-                  ? '0 0 40px rgba(245,200,66,0.25)'
-                  : '0 0 40px rgba(79,195,247,0.2)',
-              }}>
-              {formatPrice(headlineValue)}
-            </p>
-          )}
-
-          {/* ── G&V ── */}
-          {!isLoading && (
-            <div className="mt-2 flex flex-col items-center gap-1.5">
-              <div className="flex items-center gap-2">
-                <div
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-black"
-                  style={{
-                    background: pnlPositive ? 'rgba(102,187,106,0.12)' : 'rgba(227,0,11,0.12)',
-                    border: `1px solid ${pnlPositive ? 'rgba(102,187,106,0.3)' : 'rgba(227,0,11,0.3)'}`,
-                    color: pnlPositive ? '#66bb6a' : '#e3000b',
-                  }}
-                >
-                  {pnlPositive
-                    ? <TrendingUp size={15} />
-                    : <TrendingDown size={15} />
-                  }
-                  <span>
-                    {pnlPositive ? '+' : ''}{formatPrice(pnl)}
-                  </span>
-                  {performanceCostBasis > 0 && (
-                    <span className="opacity-75">
-                      ({pnlPositive ? '+' : ''}{pnlPct.toFixed(1)}%)
-                    </span>
-                  )}
-                </div>
-              </div>
-              {(realizedValue > 0 || realizedPnl !== 0) && (
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                    style={{
-                      background: realizedPnl >= 0 ? 'rgba(102,187,106,0.1)' : 'rgba(227,0,11,0.1)',
-                      border: `1px solid ${realizedPnl >= 0 ? 'rgba(102,187,106,0.25)' : 'rgba(227,0,11,0.25)'}`,
-                      color: realizedPnl >= 0 ? '#66bb6a' : '#e3000b',
-                    }}
-                  >
-                    {t('analytics.realizedPnl')}: {realizedPnl >= 0 ? '+' : '-'}{formatPrice(Math.abs(realizedPnl))}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-brand-red/30 to-transparent" />
-
-        {/* ── STAT CARDS ROW ── */}
+        {/* ── STAT CARDS ROW (collection-first: cards, sets, unique — invested is one of four) ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {STAT_CARDS.map(stat => (
             <div
@@ -453,76 +354,7 @@ export default function HomeScreen() {
           ))}
         </div>
 
-        {/* ── PORTFOLIO CHART ── */}
-        <div className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-
-          {/* Header row */}
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.portfolioHistory')}</p>
-            <div className="flex gap-1">
-              {PORTFOLIO_PERIODS.map(p => (
-                <button
-                  key={p.key}
-                  onClick={() => setChartPeriod(p.key)}
-                  className="px-2 py-1 rounded-lg text-[10px] font-bold transition-all"
-                  style={{
-                    background: chartPeriod === p.key ? 'rgba(245,200,66,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: chartPeriod === p.key ? '#f5c842' : '#666',
-                    border: chartPeriod === p.key ? '1px solid rgba(245,200,66,0.3)' : '1px solid transparent',
-                  }}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Chart area */}
-          {chartData.length < 2 ? (
-            <div className="flex flex-col items-center justify-center h-24 gap-2">
-              <BarChart3 size={24} style={{ color: 'rgba(255,255,255,0.15)' }} />
-              <p className="text-[11px] text-text-muted">{t('home.noData')}</p>
-              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                {t('home.startSyncHint')}
-              </p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={120}>
-              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={chartColor} stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis hide domain={['auto', 'auto']} />
-                <Tooltip
-                  content={<ChartTooltip formatPrice={formatPrice} />}
-                  cursor={{ stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  fill="url(#chartGrad)"
-                  dot={false}
-                  activeDot={{ r: 4, fill: chartColor, stroke: 'none' }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* ── NAVIGATION PORTAL GRID ── */}
+        {/* ── NAVIGATION PORTAL GRID (collection & cataloguing first) ── */}
         <div>
           <p className="text-xs font-bold text-white uppercase tracking-wider mb-3">{t('home.navigation')}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -559,6 +391,171 @@ export default function HomeScreen() {
                 </span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-brand-red/30 to-transparent" />
+
+        {/* ── FINANCIAL SNAPSHOT (portfolio value + P&L) — secondary, compact ── */}
+        <div className="rounded-2xl p-4"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div
+            className="mx-auto mb-3 grid w-full max-w-[280px] grid-cols-2 rounded-xl p-1"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            aria-label={t('home.portfolioDisplayMode')}
+          >
+            {[
+              ['portfolio_value', t('home.portfolioValue')],
+              ['capital_invested', t('home.capitalInvested')],
+            ].map(([mode, label]) => {
+              const selected = portfolioDisplayMode === mode
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setPortfolioDisplayMode(mode)}
+                  className="min-w-0 rounded-lg px-2 py-1.5 text-[10px] font-bold leading-tight transition-all"
+                  style={{
+                    background: selected ? 'rgba(245,200,66,0.14)' : 'transparent',
+                    border: selected ? '1px solid rgba(245,200,66,0.28)' : '1px solid transparent',
+                    color: selected ? '#f5c842' : 'rgba(255,255,255,0.45)',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          <div className="text-center">
+            <div className="relative mb-1.5 flex w-full items-center justify-center gap-1.5">
+              {showingPortfolioValue && productValueExplanation ? (
+                <ProductValueInfo
+                  label={headlineLabel}
+                  detailsLabel={t('home.details')}
+                  explanation={productValueExplanation}
+                />
+              ) : (
+                <p className="text-[11px] text-text-muted uppercase tracking-[0.2em]">{headlineLabel}</p>
+              )}
+            </div>
+            {isLoading ? (
+              <div className="skeleton h-9 w-40 mx-auto rounded-xl" />
+            ) : (
+              <p className="text-2xl sm:text-3xl font-black tracking-tight"
+                style={{ color: showingPortfolioValue ? '#f5c842' : '#4fc3f7' }}>
+                {formatPrice(headlineValue)}
+              </p>
+            )}
+
+            {/* ── G&V ── */}
+            {!isLoading && (
+              <div className="mt-2 flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black"
+                    style={{
+                      background: pnlPositive ? 'rgba(102,187,106,0.12)' : 'rgba(227,0,11,0.12)',
+                      border: `1px solid ${pnlPositive ? 'rgba(102,187,106,0.3)' : 'rgba(227,0,11,0.3)'}`,
+                      color: pnlPositive ? '#66bb6a' : '#e3000b',
+                    }}
+                  >
+                    {pnlPositive
+                      ? <TrendingUp size={13} />
+                      : <TrendingDown size={13} />
+                    }
+                    <span>
+                      {pnlPositive ? '+' : ''}{formatPrice(pnl)}
+                    </span>
+                    {performanceCostBasis > 0 && (
+                      <span className="opacity-75">
+                        ({pnlPositive ? '+' : ''}{pnlPct.toFixed(1)}%)
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {(realizedValue > 0 || realizedPnl !== 0) && (
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                      style={{
+                        background: realizedPnl >= 0 ? 'rgba(102,187,106,0.1)' : 'rgba(227,0,11,0.1)',
+                        border: `1px solid ${realizedPnl >= 0 ? 'rgba(102,187,106,0.25)' : 'rgba(227,0,11,0.25)'}`,
+                        color: realizedPnl >= 0 ? '#66bb6a' : '#e3000b',
+                      }}
+                    >
+                      {t('analytics.realizedPnl')}: {realizedPnl >= 0 ? '+' : '-'}{formatPrice(Math.abs(realizedPnl))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── PORTFOLIO CHART ── */}
+          <div className="mt-4 border-t border-white/5 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.portfolioHistory')}</p>
+              <div className="flex gap-1">
+                {PORTFOLIO_PERIODS.map(p => (
+                  <button
+                    key={p.key}
+                    onClick={() => setChartPeriod(p.key)}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold transition-all"
+                    style={{
+                      background: chartPeriod === p.key ? 'rgba(245,200,66,0.15)' : 'rgba(255,255,255,0.04)',
+                      color: chartPeriod === p.key ? '#f5c842' : '#666',
+                      border: chartPeriod === p.key ? '1px solid rgba(245,200,66,0.3)' : '1px solid transparent',
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {chartData.length < 2 ? (
+              <div className="flex flex-col items-center justify-center h-24 gap-2">
+                <BarChart3 size={24} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                <p className="text-[11px] text-text-muted">{t('home.noData')}</p>
+                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  {t('home.startSyncHint')}
+                </p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={120}>
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={chartColor} stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis hide domain={['auto', 'auto']} />
+                  <Tooltip
+                    content={<ChartTooltip formatPrice={formatPrice} />}
+                    cursor={{ stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke={chartColor}
+                    strokeWidth={2}
+                    fill="url(#chartGrad)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: chartColor, stroke: 'none' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 

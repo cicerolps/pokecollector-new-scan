@@ -8,7 +8,7 @@ import { useSettings } from '../contexts/SettingsContext'
 import { useConfirmDialog } from '../contexts/ConfirmDialogContext'
 import toast from 'react-hot-toast'
 import { CARD_VARIANTS, getDefaultVariant } from '../utils/cardVariants'
-import TcgdexLanguageSelect from './TcgdexLanguageSelect'
+import CollectionLanguagePicker from './CollectionLanguagePicker'
 import { invalidateCardState, invalidateTcgdexFilterLanguages } from '../utils/queryInvalidation'
 import MoneyInput from './MoneyInput'
 import { parseMoneyInputValue } from '../utils/moneyInput'
@@ -113,7 +113,7 @@ export function ScanAddModal({ match, defaultLang, getPhoto, onClose, onAdded })
             {/* Language */}
             <div>
               <label className="text-xs text-text-muted mb-1.5 block font-medium">🌐 {t('lang.filter')}</label>
-              <TcgdexLanguageSelect value={lang} onChange={setLang} className="select w-full" />
+              <CollectionLanguagePicker value={lang} onChange={setLang} />
             </div>
 
             {/* Quantity + Condition */}

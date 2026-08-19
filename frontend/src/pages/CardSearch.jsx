@@ -169,10 +169,9 @@ export default function CardSearch() {
 
   const allSeries = useMemo(() => [...new Set(allSets.map(s => s.series).filter(Boolean))].sort(), [allSets])
   const visibleLanguageCodes = useMemo(() => visibleLanguages.map(language => language.code), [visibleLanguages])
-  const preferredCatalogueLanguage = normalizeTcgdexLanguage(settings.language || 'en', 'en')
-  const defaultLangFilter = visibleLanguageCodes.includes(preferredCatalogueLanguage)
-    ? preferredCatalogueLanguage
-    : 'all'
+  // Searches span every synced language by default — narrowing to one
+  // language is a deliberate filter the trainer opts into, not the common case.
+  const defaultLangFilter = 'all'
 
   // Search state is deliberately derived from the URL. This makes direct links,
   // refreshes, and browser history reproduce precisely the same search.

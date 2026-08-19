@@ -150,6 +150,7 @@ A divisão é definida em `backend/api/settings.py`:
   - chaves do Telegram e preferências de alerta
   - consentimento de diagnóstico do scanner
   - nome de treinador
+  - idioma principal e lista de idiomas frequentes de carta (usados como atalhos ao adicionar uma carta à coleção)
 - `ADMIN_ONLY_KEYS`
   - intervalo de sincronização completa
   - intervalo de sincronização de preço
