@@ -182,6 +182,8 @@ const en = {
     recentlyAdded: 'Recently Added',
     viewAll: 'All',
     topCards: 'Most Valuable Cards',
+    rarestCards: 'Rarest Cards',
+    oldestSets: 'From Your Oldest Sets',
     details: 'Details',
     sync: 'Sync',
     syncing: 'Syncing…',
