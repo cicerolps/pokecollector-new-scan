@@ -49,20 +49,57 @@ function ChartTooltip({ active, payload, label, formatPrice }) {
   )
 }
 
+// ── Binder pocket — a plastic-sleeve frame around a card thumbnail, the ─────────
+// simple visual nod to a physical collector's binder page that the rest of
+// these thumbnail strips lean on (see also the ring-hole strip at the top
+// of the page and the tab flags beside each section title).
+function CardPocket({ children }) {
+  return (
+    <div
+      className="relative rounded-xl overflow-hidden"
+      style={{
+        padding: 3,
+        background: 'linear-gradient(155deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02) 45%, rgba(0,0,0,0.25))',
+        border: '1px solid rgba(255,255,255,0.12)',
+      }}
+    >
+      {children}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-xl"
+        style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 35%)' }}
+      />
+    </div>
+  )
+}
+
+// Small colored tab-flag before a section title — a nod to binder page dividers.
+function SectionTag({ color }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-3 w-1.5 rounded-sm mr-1.5 align-middle"
+      style={{ background: color }}
+    />
+  )
+}
+
 // ── Card thumbnail ────────────────────────────────────────────────────────────
 function CardThumb({ card, onClick }) {
   return (
     <div className="w-[110px] flex-shrink-0">
-      <CollectionCardDisplay
-        variant="artwork"
-        item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
-        card={card}
-        alt={card.name}
-        variantEffectSource={card.variant}
-        interactive
-        onClick={onClick}
-        stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
-      />
+      <CardPocket>
+        <CollectionCardDisplay
+          variant="artwork"
+          item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
+          card={card}
+          alt={card.name}
+          variantEffectSource={card.variant}
+          interactive
+          onClick={onClick}
+          stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
+        />
+      </CardPocket>
     </div>
   )
 }
@@ -71,15 +108,17 @@ function CardThumb({ card, onClick }) {
 function CaptionedCardThumb({ card, caption, captionColor = '#f5c842', onClick }) {
   return (
     <div className="w-[110px] flex-shrink-0 cursor-pointer group" onClick={onClick}>
-      <CollectionCardDisplay
-        variant="artwork"
-        item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
-        card={card}
-        alt={card.name}
-        variantEffectSource={card.variant}
-        interactive
-        stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
-      />
+      <CardPocket>
+        <CollectionCardDisplay
+          variant="artwork"
+          item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
+          card={card}
+          alt={card.name}
+          variantEffectSource={card.variant}
+          interactive
+          stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
+        />
+      </CardPocket>
       {caption && (
         <p className="text-[10px] font-bold mt-1 truncate" style={{ color: captionColor }}>
           {caption}
@@ -311,6 +350,20 @@ export default function HomeScreen() {
 
       <div className="relative z-10 flex flex-col gap-6 px-4 pt-6 pb-10">
 
+        {/* ── BINDER RING HOLES — a simple album-page allusion at the top of the screen ── */}
+        <div className="flex items-center justify-center gap-5" aria-hidden="true">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <span
+              key={i}
+              className="h-2 w-2 rounded-full"
+              style={{
+                background: 'rgba(0,0,0,0.35)',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.06)',
+              }}
+            />
+          ))}
+        </div>
+
         {/* ── TOP BAR: Logout + Sync ── */}
         <div className="flex items-center justify-between">
           {multiUser ? (
@@ -390,7 +443,7 @@ export default function HomeScreen() {
         {recentCards.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.recentlyAdded')}</p>
+              <p className="text-xs font-bold text-white uppercase tracking-wider"><SectionTag color="#e3000b" />{t('home.recentlyAdded')}</p>
               <button onClick={() => navigate('/collection')}
                 className="text-[11px] font-semibold hover:opacity-80 transition-opacity"
                 style={{ color:'#e3000b' }}>{t('home.viewAll')} →</button>
@@ -407,7 +460,7 @@ export default function HomeScreen() {
         {rarestCards.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.rarestCards')}</p>
+              <p className="text-xs font-bold text-white uppercase tracking-wider"><SectionTag color="#ce93d8" />{t('home.rarestCards')}</p>
             </div>
             <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4">
               {rarestCards.map(card => (
@@ -427,7 +480,7 @@ export default function HomeScreen() {
         {oldestSetCards.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.oldestSets')}</p>
+              <p className="text-xs font-bold text-white uppercase tracking-wider"><SectionTag color="#81c784" />{t('home.oldestSets')}</p>
               <button onClick={() => navigate('/sets')}
                 className="text-[11px] font-semibold hover:opacity-80 transition-opacity"
                 style={{ color:'#81c784' }}>{t('home.viewAll')} →</button>
@@ -448,7 +501,7 @@ export default function HomeScreen() {
 
         {/* ── NAVIGATION PORTAL GRID (collection & cataloguing first) ── */}
         <div>
-          <p className="text-xs font-bold text-white uppercase tracking-wider mb-3">{t('home.navigation')}</p>
+          <p className="text-xs font-bold text-white uppercase tracking-wider mb-3"><SectionTag color="#b0bec5" />{t('home.navigation')}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {PORTAL_ITEMS.map(({ to, icon: Icon, label, color, badge, active }) => (
               <button
@@ -588,7 +641,7 @@ export default function HomeScreen() {
           {/* ── PORTFOLIO CHART ── */}
           <div className="mt-4 border-t border-white/5 pt-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.portfolioHistory')}</p>
+              <p className="text-xs font-bold text-white uppercase tracking-wider"><SectionTag color="#f5c842" />{t('home.portfolioHistory')}</p>
               <div className="flex gap-1">
                 {PORTFOLIO_PERIODS.map(p => (
                   <button
@@ -655,7 +708,7 @@ export default function HomeScreen() {
         {topCards.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-white uppercase tracking-wider">{t('home.topCards')}</p>
+              <p className="text-xs font-bold text-white uppercase tracking-wider"><SectionTag color="#f5c842" />{t('home.topCards')}</p>
               <button onClick={() => navigate('/analytics')}
                 className="text-[11px] font-semibold hover:opacity-80 transition-opacity"
                 style={{ color:'#f5c842' }}>{t('home.details')} →</button>
@@ -665,14 +718,16 @@ export default function HomeScreen() {
                 <div key={card.collection_item_id || card.id} className="flex-shrink-0 w-[110px] cursor-pointer group"
                   onClick={() => openCollectionItem(card)}>
                   <div className="relative">
-                    <CollectionCardDisplay
-                      variant="artwork"
-                      item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
-                      card={card}
-                      alt={card.name}
-                      variantEffectSource={card.variant}
-                      stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
-                    />
+                    <CardPocket>
+                      <CollectionCardDisplay
+                        variant="artwork"
+                        item={{ id: card.collection_item_id, has_scan_photo: card.has_scan_photo }}
+                        card={card}
+                        alt={card.name}
+                        variantEffectSource={card.variant}
+                        stateIndicatorProps={{ card: withCollectionItemState(card, card), alwaysShowQuantity: true }}
+                      />
+                    </CardPocket>
                     <span className="absolute bottom-1 left-1 z-20 text-[9px] font-black px-1 rounded leading-4"
                       style={{ background:'rgba(0,0,0,0.85)', color:'#f5c842' }}>#{i+1}</span>
                   </div>
